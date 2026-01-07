@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlmodel import Field, SQLModel, Column
 from sqlalchemy import Index
 from pgvector.sqlalchemy import Vector
@@ -10,7 +10,7 @@ class Memory(SQLModel, table=True):
 	content: str
 
 	# Vetor de embedding semântico (pgvector)
-	embedding = Field(sa_column=Column(Vector(128)))
+	embedding: Optional[List[float]] = Field(default=None, sa_column=Column(Vector(128)))
 
 
 # Índice para buscas vetoriais eficientes (cosine)

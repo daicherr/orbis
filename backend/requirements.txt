@@ -7,3 +7,5 @@ pgvector
 google-generativeai
 python-dotenv
 sentence-transformers
+pydantic-settings
+psycopg[binary]

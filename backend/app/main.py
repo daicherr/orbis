@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+import asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 from contextlib import asynccontextmanager
 
@@ -29,10 +30,16 @@ async def lifespan(app: FastAPI):
     # Setup na inicialização
     print("Iniciando a aplicação e os serviços...")
     
-    # Garante pgvector e cria tabelas (se não existirem)
-    await ensure_pgvector_extension()
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    # Garante pgvector e cria tabelas (se não existirem) com retry
+    for attempt in range(10):
+        try:
+            await ensure_pgvector_extension()
+            async with engine.begin() as conn:
+                await conn.run_sync(SQLModel.metadata.create_all)
+            break
+        except Exception as e:
+            print(f"DB init tentativa {attempt+1}/10 falhou: {e}")
+            await asyncio.sleep(1.5)
     
     # Popula o banco de dados com NPCs iniciais
     await seed_initial_npcs()
