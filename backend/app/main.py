@@ -16,6 +16,8 @@ from app.agents.director import Director
 from app.agents.stylizer import Stylizer
 from app.agents.scribe import Scribe
 from app.agents.architect import Architect
+from sqlalchemy import text
+from app.core.simulation.daily_tick import DailyTickSimulator
 
 # Armazenamento simples para as instâncias dos nossos serviços
 app_state = {}
@@ -84,6 +86,19 @@ async def get_stylizer() -> Stylizer:
 def read_root():
     return {"message": "Welcome to Gem RPG Orbis API"}
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+@app.get("/health/db")
+async def health_db():
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        return {"status": "error", "db": str(e)}
+
 @app.post("/player/create")
 async def create_player(name: str, session: AsyncSession = Depends(get_session)) -> Player:
     player_repo = PlayerRepository(session)
@@ -115,3 +130,9 @@ async def observe_npc(
         
     description = stylizer.generate_npc_description(npc)
     return {"description": description}
+
+@app.post("/simulation/tick")
+async def simulation_tick():
+    simulator = DailyTickSimulator()
+    await simulator.run_daily_simulation()
+    return {"status": "ok", "message": "Daily simulation executed"}
