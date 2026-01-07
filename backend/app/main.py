@@ -7,8 +7,10 @@ from app.database.init_db import seed_initial_npcs, ensure_pgvector_extension
 from sqlmodel import SQLModel
 from app.core.combat_engine import CombatEngine
 from app.database.models.player import Player
+from app.database.models.memory import Memory
 from app.database.repositories.player_repo import PlayerRepository
 from app.database.repositories.npc_repo import NpcRepository
+from app.database.repositories.hybrid_search import HybridSearchRepository
 from app.services.gemini_client import GeminiClient
 from app.agents.narrator import Narrator
 from app.agents.referee import Referee
@@ -80,6 +82,9 @@ async def get_director(session: AsyncSession = Depends(get_session)) -> Director
 async def get_stylizer() -> Stylizer:
     return app_state["stylizer"]
 
+def get_hybrid_repo(session: AsyncSession) -> HybridSearchRepository:
+    return HybridSearchRepository(session)
+
 # --- Endpoints da API ---
 
 @app.get("/")
@@ -130,6 +135,27 @@ async def observe_npc(
         
     description = stylizer.generate_npc_description(npc)
     return {"description": description}
+
+@app.post("/npc/{npc_id}/memory")
+async def add_npc_memory(
+    npc_id: int,
+    content: str,
+    session: AsyncSession = Depends(get_session),
+):
+    repo = HybridSearchRepository(session)
+    mem = await repo.add_memory(npc_id=npc_id, content=content, embedding_dim=128)
+    return {"id": mem.id, "npc_id": mem.npc_id, "content": mem.content}
+
+@app.get("/npc/{npc_id}/memories")
+async def search_npc_memories(
+    npc_id: int,
+    q: str,
+    limit: int = 5,
+    session: AsyncSession = Depends(get_session),
+):
+    repo = HybridSearchRepository(session)
+    results = await repo.find_relevant_memories(npc_id=npc_id, query_text=q, limit=limit)
+    return {"npc_id": npc_id, "query": q, "results": results}
 
 @app.post("/simulation/tick")
 async def simulation_tick():
