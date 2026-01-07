@@ -4,8 +4,8 @@ const GameWindow = ({ children }) => {
   return (
     <div className="container mx-auto mt-10 p-8 bg-cult-light text-cult-dark font-serif shadow-lg border-4 border-cult-gold rounded-lg"
          style={{ 
-             backgroundImage: "url('/paper-texture.jpg')", // Usaremos uma textura de papel
-             boxShadow: "0 0 20px rgba(255, 215, 0, 0.5)" // Um brilho dourado
+             background: "linear-gradient(135deg, #f7f1e3 0%, #f3e9d2 100%)",
+             boxShadow: "0 0 20px rgba(255, 215, 0, 0.5)"
          }}>
       <div className="overflow-y-auto h-96 p-4 border border-cult-secondary rounded">
         {children}

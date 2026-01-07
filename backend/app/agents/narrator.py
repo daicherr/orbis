@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List
 from app.database.models.player import Player
 from app.database.models.npc import NPC
@@ -16,13 +17,14 @@ class Narrator:
         print("Carregando contexto de lore...")
         context_parts = []
         
-        # Caminhos para as pastas de lore
-        lore_manual_path = os.path.join(self.lore_files_path, '..', 'ruleset_source', 'lore_manual')
+        # Caminhos para as pastas de lore (independente do cwd)
+        repo_root = Path(__file__).resolve().parents[3]
+        lore_manual_path = repo_root / 'ruleset_source' / 'lore_manual'
         
         # Ler arquivos de lore_manual
-        for filename in os.listdir(lore_manual_path):
+        for filename in os.listdir(str(lore_manual_path)):
             if filename.endswith(".md"):
-                with open(os.path.join(lore_manual_path, filename), 'r', encoding='utf-8') as f:
+                with open(lore_manual_path / filename, 'r', encoding='utf-8') as f:
                     context_parts.append(f"--- Início de {filename} ---\n{f.read()}\n--- Fim de {filename} ---\n")
         
         print("Contexto de lore carregado.")
@@ -56,6 +58,6 @@ class Narrator:
         )
 
         print(f"--- Gerando descrição para a cena em {location} via Gemini ---")
-        literary_description = self.gemini_client.generate_text(prompt)
+        literary_description = self.gemini_client.generate_text(prompt, task="story")
         
         return literary_description

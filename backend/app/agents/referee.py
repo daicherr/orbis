@@ -36,7 +36,7 @@ class Referee:
         print(f"--- Analisando a ação do jogador via Gemini: '{player_input}' ---")
         
         # Chamada real ao Gemini para gerar o JSON
-        action_data = self.gemini_client.generate_json(prompt)
+        action_data = self.gemini_client.generate_json(prompt, task="combat")
 
         # Validação básica da resposta
         if not isinstance(action_data, dict) or "intent" not in action_data:

@@ -36,7 +36,7 @@ class Scribe:
             f"--- JSON da Nova Habilidade ---"
         )
         
-        new_skill = self.gemini_client.generate_json(prompt)
+        new_skill = self.gemini_client.generate_json(prompt, task="story")
         # Lógica para salvar a nova skill em techniques.json ou no perfil do jogador
         print(f"Nova habilidade gerada: {new_skill.get('name')}")
         return new_skill

@@ -25,6 +25,6 @@ class Stylizer:
 
         print(f"--- Gerando descrição estilizada para {npc.name} via Gemini ---")
         
-        description = self.gemini_client.generate_text(prompt)
+        description = self.gemini_client.generate_text(prompt, task="story")
         
         return description

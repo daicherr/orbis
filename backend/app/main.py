@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 from contextlib import asynccontextmanager
@@ -66,6 +67,21 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# --- CORS (permitir frontend local) ---
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 # --- Gestão de Dependências ---
 
 async def get_session() -> AsyncSession:
@@ -119,9 +135,8 @@ async def create_player(name: str, session: AsyncSession = Depends(get_session))
 
 @app.post("/game/turn")
 async def game_turn(player_id: int, player_input: str, director: Director = Depends(get_director)):
-    if "director" not in app_state:
-        raise HTTPException(status_code=500, detail="Director service not initialized.")
-        
+    # `Director` é injetado por dependência e construído on-demand.
+    # Se serviços base não estiverem prontos, a dependência levantará erro.
     result = await director.process_player_turn(player_id=player_id, player_input=player_input)
     
     if result.get("error"):

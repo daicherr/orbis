@@ -1,13 +1,15 @@
 from typing import Dict, Any
+from pathlib import Path
 from app.services.gemini_client import GeminiClient
 from app.core.data_manager import data_manager
 
 class Architect:
     def __init__(self, gemini_client: GeminiClient):
         self.gemini_client = gemini_client
-        self.items_path = "ruleset_source/mechanics/items.json"
-        self.loot_tables_path = "ruleset_source/mechanics/loot_tables.json"
-        self.bestiary_path = "lore_library/bestiary.json" # Novo bestiário para dados estruturados
+        repo_root = Path(__file__).resolve().parents[3]
+        self.items_path = str((repo_root / "ruleset_source/mechanics/items.json").resolve())
+        self.loot_tables_path = str((repo_root / "ruleset_source/mechanics/loot_tables.json").resolve())
+        self.bestiary_path = str((repo_root / "lore_library/bestiary.json").resolve())  # Novo bestiário para dados estruturados
 
     def _ensure_item_exists(self, item_name: str):
         """Verifica se um item existe e o cria se não existir."""
@@ -50,7 +52,7 @@ class Architect:
         )
 
         print(f"--- Gerando inimigo para Tier {tier} no bioma {biome} via Gemini ---")
-        enemy_data = self.gemini_client.generate_json(prompt)
+        enemy_data = self.gemini_client.generate_json(prompt, task="story")
         if "error" in enemy_data:
             return enemy_data # Retorna o erro se a geração falhar
 

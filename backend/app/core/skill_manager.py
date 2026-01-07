@@ -1,10 +1,23 @@
 import json
 import os
+from pathlib import Path
 from typing import Dict, Any, Optional
+
+
+def _repo_root() -> Path:
+    # backend/app/core/skill_manager.py -> repo root
+    return Path(__file__).resolve().parents[3]
+
+
+def _resolve_repo_path(path_str: str) -> str:
+    p = Path(path_str)
+    if p.is_absolute():
+        return str(p)
+    return str((_repo_root() / p).resolve())
 
 class SkillManager:
     def __init__(self, techniques_file_path: str):
-        self.skills: Dict[str, Dict[str, Any]] = self._load_skills(techniques_file_path)
+        self.skills: Dict[str, Dict[str, Any]] = self._load_skills(_resolve_repo_path(techniques_file_path))
 
     def _load_skills(self, file_path: str) -> Dict[str, Dict[str, Any]]:
         """Carrega as habilidades do arquivo JSON e as armazena em um dicionário."""
