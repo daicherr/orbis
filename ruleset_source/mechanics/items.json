@@ -1,0 +1,33 @@
+[
+  {
+    "id": "spirit_stone_low",
+    "name": "Pedra Espiritual de Baixo Grau",
+    "type": "currency",
+    "description": "Uma fonte de Yuan Qi puro. Usada como moeda e para cultivo.",
+    "value": 10
+  },
+  {
+    "id": "blood_pill_small",
+    "name": "Pílula de Sangue Pequena",
+    "type": "consumable",
+    "description": "Uma pílula feita de essência de besta. Restaura a Quintessência.",
+    "effects": [
+      {
+        "type": "restore_quintessence",
+        "amount": 50
+      }
+    ],
+    "value": 20
+  },
+  {
+    "id": "iron_sword",
+    "name": "Espada de Ferro",
+    "type": "equipment",
+    "slot": "weapon",
+    "description": "Uma espada simples e confiável.",
+    "stats": {
+      "base_damage": 10
+    },
+    "value": 50
+  }
+]

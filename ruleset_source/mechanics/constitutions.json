@@ -1,0 +1,55 @@
+{
+  "procedural": [
+    {
+      "name_template": "Iron Bone Body",
+      "description": "A body with enhanced physical defense.",
+      "effects": [{"stat": "defense", "modifier": 1.2}]
+    }
+  ],
+  "godfiends": [
+    {
+      "name": "Black Sand Body",
+      "description": "Foco em Defesa e Gravidade. Mecânica de 'Erosão'. Ultimate: Campo Negro (Gravidade 10x).",
+      "effects": [{"stat": "defense", "modifier": 2.0}, {"ability": "gravity_manipulation"}]
+    },
+    {
+      "name": "Eon Sea Body",
+      "description": "Foco em Regeneração Infinita. Regenera membros. Stamina inesgotável.",
+      "effects": [{"stat": "hp_regeneration", "modifier": 5.0}, {"passive": "infinite_stamina"}]
+    },
+    {
+      "name": "Lightning Devastator Body",
+      "description": "Foco em Velocidade Extrema. Iniciativa garantida. Dano escala com Velocidade.",
+      "effects": [{"stat": "speed", "modifier": 3.0}, {"passive": "guaranteed_initiative"}]
+    },
+    {
+      "name": "Chaos Hole Body",
+      "description": "Absorve dano de energia e converte em Quintessência.",
+      "effects": [{"passive": "energy_absorption"}, {"on_hit_trigger": "convert_to_quintessence"}]
+    },
+    {
+      "name": "Phoenix Body",
+      "description": "Foco em Fogo e Renascimento (Nirvana). Purifica corrupção de aliados.",
+      "effects": [{"element": "Fire"}, {"ability": "rebirth"}, {"aura": "purify_corruption"}]
+    },
+    {
+      "name": "Dragon Body",
+      "description": "Força bruta e escamas. Debuff de medo em inimigos inferiores.",
+      "effects": [{"stat": "strength", "modifier": 2.5}, {"passive": "dragon_scales"}, {"aura": "fear_debuff"}]
+    }
+  ],
+  "chimeras": [
+    {
+      "name": "Mercury Veins",
+      "description": "An artificial body with veins of mercury, granting poison resistance.",
+      "effects": [{"resistance": "poison", "value": 0.9}]
+    }
+  ],
+  "taboo": [
+    {
+      "name": "Heavenly Scourge Body",
+      "description": "A cursed body that attracts heavenly lightning.",
+      "effects": [{"passive": "attracts_lightning"}]
+    }
+  ]
+}

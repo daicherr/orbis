@@ -1,0 +1,25 @@
+{
+  "elements": ["Fire", "Water", "Earth", "Wind", "Lightning", "Light", "Dark"],
+  "matrix": {
+    "Fire": {
+      "Water": 0.5,
+      "Wind": 1.5,
+      "Earth": 1.0
+    },
+    "Water": {
+      "Fire": 1.5,
+      "Earth": 0.5,
+      "Wind": 1.0
+    },
+    "Earth": {
+      "Wind": 0.5,
+      "Water": 1.5,
+      "Fire": 1.0
+    },
+    "Wind": {
+      "Earth": 1.5,
+      "Fire": 0.5,
+      "Water": 1.0
+    }
+  }
+}

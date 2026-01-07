@@ -1,0 +1,56 @@
+[
+  {
+    "id": "meteor_soul",
+    "name": "Meteor Soul",
+    "description": "Estocada que ignora armadura e causa sangramento espiritual.",
+    "cost_type": "shadow_chi",
+    "cost_amount": 40,
+    "base_damage": 50,
+    "effects": [
+      {
+        "type": "armor_penetration",
+        "value": 1.0 
+      },
+      {
+        "type": "dot",
+        "damage_type": "spiritual",
+        "damage_per_turn": 10,
+        "duration": 3
+      }
+    ],
+    "silent_art": true
+  },
+  {
+    "id": "wall_of_northern_heavens",
+    "name": "Wall of Northern Heavens",
+    "description": "Barreira que reflete 50% do dano.",
+    "cost_type": "shadow_chi",
+    "cost_amount": 60,
+    "effects": [
+      {
+        "type": "damage_reflection",
+        "percentage": 0.5,
+        "duration": 1
+      }
+    ],
+    "silent_art": false
+  },
+  {
+    "id": "shadowstep",
+    "name": "Shadowstep",
+    "description": "Teleporte curto que deixa uma imagem residual para contra-ataque.",
+    "cost_type": "shadow_chi",
+    "cost_amount": 25,
+    "effects": [
+      {
+        "type": "teleport",
+        "range": "short"
+      },
+      {
+        "type": "create_afterimage",
+        "riposte_damage_multiplier": 2.0
+      }
+    ],
+    "silent_art": true
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "class_name": "Initial Body",
+    "base_stats": {
+      "qi": 100,
+      "hp": 100,
+      "defense": 10
+    },
+    "growth_rate": {
+      "qi_per_level": 10,
+      "hp_per_level": 10,
+      "defense_per_level": 1
+    }
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "spirit_stone_low",
+    "name": "Pedra Espiritual Baixa",
+    "description": "Uma fonte de Yuan Qi puro."
+  },
+  {
+    "id": "blood_pill_small",
+    "name": "Pílula de Sangue Pequena",
+    "description": "Restaura a Quintessência."
+  },
+  {
+    "id": "iron_sword",
+    "name": "Espada de Ferro",
+    "description": "Uma espada simples."
+  }
+]

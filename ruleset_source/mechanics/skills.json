@@ -1,0 +1,14 @@
+[
+  {
+    "skill_id": "fireball",
+    "name": "Fireball",
+    "description": "A basic fire spell.",
+    "damage_formula": "YuanQi * 1.5",
+    "cost": {
+      "type": "YuanQi",
+      "amount": 20
+    },
+    "cooldown": 5,
+    "element": "Fire"
+  }
+]

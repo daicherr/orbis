@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy
+sqlmodel
+asyncpg
+pgvector
+google-generativeai
+python-dotenv
