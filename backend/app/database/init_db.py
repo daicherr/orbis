@@ -1,5 +1,7 @@
 import asyncio
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy import text
 from app.database.db_connection import engine
 from app.database.models.npc import NPC
 from app.database.repositories.npc_repo import NpcRepository
@@ -21,8 +23,9 @@ async def seed_initial_npcs():
         
         for npc_data in initial_npcs:
             # Verifica se um NPC com o mesmo nome já existe
-            existing_npcs = await session.exec(NPC.select().where(NPC.name == npc_data.name))
-            if existing_npcs.first() is None:
+            result = await session.exec(select(NPC).where(NPC.name == npc_data.name))
+            exists = result.first()
+            if exists is None:
                 print(f"Criando NPC: {npc_data.name}")
                 await npc_repo.create(npc_data)
             else:
@@ -34,3 +37,9 @@ if __name__ == "__main__":
     # Para executar este script de forma independente:
     # python -m app.database.init_db
     asyncio.run(seed_initial_npcs())
+
+async def ensure_pgvector_extension():
+    """Garante que a extensão 'vector' (pgvector) esteja habilitada."""
+    async with engine.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+        print("Extensão pgvector verificada/habilitada.")

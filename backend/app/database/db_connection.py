@@ -1,7 +1,10 @@
-from sqlmodel import create_engine, SQLModel
+from sqlmodel import SQLModel
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from app.config import settings
 
-engine = create_engine(settings.DATABASE_URL, echo=True, future=True)
+# Cria engine assíncrono compatível com 'postgresql+asyncpg'
+engine: AsyncEngine = create_async_engine(settings.DATABASE_URL, echo=True, future=True)
 
-def init_db():
-    SQLModel.metadata.create_all(engine)
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)

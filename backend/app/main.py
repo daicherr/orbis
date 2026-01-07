@@ -3,7 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from contextlib import asynccontextmanager
 
 from app.database.db_connection import engine
-from app.database.init_db import seed_initial_npcs
+from app.database.init_db import seed_initial_npcs, ensure_pgvector_extension
 from sqlmodel import SQLModel
 from app.core.combat_engine import CombatEngine
 from app.database.models.player import Player
@@ -25,7 +25,8 @@ async def lifespan(app: FastAPI):
     # Setup na inicialização
     print("Iniciando a aplicação e os serviços...")
     
-    # Criar tabelas (se não existirem)
+    # Garante pgvector e cria tabelas (se não existirem)
+    await ensure_pgvector_extension()
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
     
