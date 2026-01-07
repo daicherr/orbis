@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 from pathlib import Path
 
 # --- DEFINIÇÃO DA ESTRUTURA ---
@@ -93,13 +94,51 @@ def main():
     base_path = Path.cwd()
     create_structure(base_path, PROJECT_STRUCTURE)
 
+    # 2. Criar .env apontando para o Postgres do Docker
+    env_path = base_path / ".env"
+    if not env_path.exists():
+        env_content = (
+            "# GEM RPG Orbis environment\n"
+            "DATABASE_URL=postgresql+asyncpg://postgres:admin@localhost:5432/rpg_cultivo\n"
+            "GEMINI_API_KEY=YOUR_GEMINI_API_KEY\n"
+        )
+        env_path.write_text(env_content, encoding="utf-8")
+        print(f"✅ Criado: {env_path}")
+    else:
+        print(f"ℹ️ .env já existe em: {env_path}")
+
+    # 3. Subir o banco com Docker (se Docker estiver instalado)
+    compose_file = base_path / "docker-compose.yml"
+    if compose_file.exists():
+        print("➡️ Tentando subir o PostgreSQL com pgvector via Docker...")
+        # Tenta 'docker compose', se falhar tenta 'docker-compose'
+        cmd_variants = [
+            ["docker", "compose", "up", "-d"],
+            ["docker-compose", "up", "-d"],
+        ]
+        started = False
+        for cmd in cmd_variants:
+            try:
+                subprocess.run(cmd, cwd=str(base_path), check=True)
+                started = True
+                break
+            except Exception as e:
+                continue
+        if started:
+            print("✅ Docker: serviço 'rpg_database' solicitado. Verifique com 'docker ps'.")
+        else:
+            print("⚠️ Não foi possível executar 'docker compose up -d'.\n   Execute manualmente no terminal dentro da pasta do projeto.")
+    else:
+        print("⚠️ docker-compose.yml não encontrado na raiz do projeto.")
+
     print("\n" + "="*50)
-    print("🏁 ESTRUTURA CRIADA COM SUCESSO!")
+    print("🏁 SETUP CONCLUÍDO!")
     print("="*50)
     print("Próximos Passos:")
-    print("1. Instale o PostgreSQL na sua máquina.")
-    print("2. Instale as dependências: pip install -r backend/requirements.txt")
-    print("3. Use o DeepSearch com o prompt fornecido e preencha a pasta '/ruleset_source'.")
+    print("1. Verifique o Docker: docker ps (deve aparecer 'rpg_database').")
+    print("2. Instale dependências do backend: pip install -r backend/requirements.txt")
+    print("3. Inicie o backend (FastAPI) e o frontend (Next.js).")
+    print("4. Opcional: habilitar extensão pgvector via Docker:\n   docker exec -it rpg_database psql -U postgres -d rpg_cultivo -c 'CREATE EXTENSION IF NOT EXISTS vector;'")
 
 if __name__ == "__main__":
     main()
