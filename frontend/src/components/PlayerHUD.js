@@ -25,10 +25,10 @@ const StatBar = ({ label, value, maxValue, colorClass, icon }) => {
 const PlayerHUD = ({ playerStats }) => {
   if (!playerStats) {
     return (
-      <div className="mystic-glass p-4 rounded-xl">
-        <div className="flex items-center gap-2 text-celestial-jade font-body">
-          <div className="spinner border-celestial-jade"></div>
-          <span>Carregando...</span>
+      <div className="glass-panel p-6 rounded-xl">
+        <div className="flex items-center gap-3 text-jade font-body">
+          <div className="w-6 h-6 border-4 border-jade/20 border-t-jade rounded-full animate-spin"></div>
+          <span>Carregando dados do cultivador...</span>
         </div>
       </div>
     );
@@ -49,8 +49,8 @@ const PlayerHUD = ({ playerStats }) => {
       <div className="mystic-glass p-4 rounded-xl border border-red-500/30">
         <StatBar 
           label="HP" 
-          value={playerStats.current_hp} 
-          maxValue={playerStats.max_hp} 
+          value={playerStats.current_hp || 0} 
+          maxValue={playerStats.max_hp || 100} 
           colorClass="bg-gradient-to-r from-red-600 via-red-500 to-pink-500 shadow-glow-purple"
           icon="❤️"
         />
@@ -62,21 +62,21 @@ const PlayerHUD = ({ playerStats }) => {
         <div className="space-y-3">
           <StatBar 
             label="Quintessência" 
-            value={playerStats.quintessential_essence} 
+            value={playerStats.quintessential_essence || 0} 
             maxValue={playerStats.max_quintessential_essence || 100}
             colorClass="bg-gradient-to-r from-orange-600 to-yellow-500"
             icon="💎"
           />
           <StatBar 
             label="Shadow Chi" 
-            value={playerStats.shadow_chi} 
+            value={playerStats.shadow_chi || 0} 
             maxValue={playerStats.max_shadow_chi || 100}
             colorClass="bg-gradient-to-r from-purple-600 to-violet-500 shadow-glow-purple"
             icon="🌙"
           />
           <StatBar 
             label="Yuan Qi" 
-            value={playerStats.yuan_qi} 
+            value={playerStats.yuan_qi || 0} 
             maxValue={playerStats.max_yuan_qi || 100}
             colorClass="bg-gradient-to-r from-blue-600 to-cyan-500"
             icon="⚡"

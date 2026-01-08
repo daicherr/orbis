@@ -1,28 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { useGame } from '../contexts/GameContext';
 import CharacterCreationWizard from '../components/CharacterCreationWizard';
 
 export default function Home() {
   const router = useRouter();
+  const { playerId, createPlayer } = useGame();
   const [showWizard, setShowWizard] = useState(false);
-  const [hasSavedCharacter, setHasSavedCharacter] = useState(false);
 
-  // Checa localStorage apenas no cliente (após montar)
-  useEffect(() => {
-    const storedId = window.localStorage.getItem('playerId');
-    setHasSavedCharacter(!!storedId);
-  }, []);
-
-  const handleWizardComplete = (player) => {
-    window.localStorage.setItem('playerId', String(player.id));
-    window.localStorage.setItem('playerName', player.name);
-    router.push('/game');
+  const handleWizardComplete = async (playerData) => {
+    try {
+      const player = await createPlayer(playerData);
+      router.push('/game');
+    } catch (error) {
+      console.error('Erro ao criar jogador:', error);
+      alert(`Erro ao criar personagem: ${error.message}`);
+    }
   };
 
   const handleContinue = () => {
-    const storedId = window.localStorage.getItem('playerId');
-    if (storedId) {
+    if (playerId) {
       router.push('/game');
     }
   };
@@ -61,7 +59,7 @@ export default function Home() {
               </span>
             </button>
 
-            {hasSavedCharacter && (
+            {playerId && (
               <button
                 onClick={handleContinue}
                 className="w-full py-4 bg-gradient-to-r from-amber-600/20 to-yellow-600/20 hover:from-amber-500/30 hover:to-yellow-500/30 rounded-xl font-display text-lg transition-all duration-300 border border-amber-500/40 hover:border-amber-400 shadow-glow-gold"

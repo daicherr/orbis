@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
+import { useGame } from '../contexts/GameContext';
 import WorldClock from '../components/WorldClock';
 import CharacterSheet from '../components/CharacterSheet';
 import QuestLog from '../components/QuestLog';
@@ -9,8 +10,8 @@ import CombatInterface from '../components/CombatInterface';
 import NpcInspector from '../components/NpcInspector';
 
 export default function GamePage() {
+	const { playerId, playerName, sendAction, isLoading: contextLoading } = useGame();
 	const [messages, setMessages] = useState([]);
-	const [playerId, setPlayerId] = useState(null);
 	const [playerStats, setPlayerStats] = useState(null);
 	const [npcsInScene, setNpcsInScene] = useState([]);
 	const [selectedNpc, setSelectedNpc] = useState(null);
@@ -30,22 +31,21 @@ export default function GamePage() {
 	];
 
 	useEffect(() => {
-		const initOrLoadPlayer = async () => {
-			const storedId = window.localStorage.getItem('playerId');
-			const storedName = window.localStorage.getItem('playerName');
-			if (storedId && storedName) {
-				setPlayerId(Number(storedId));
-				setPlayerStats(prev => prev || { name: storedName });
-				setMessages([{ type: 'system', text: `✨ Bem-vindo de volta, ${storedName}. Sua jornada continua...` }]);
-				handleSend('olhar ao redor', Number(storedId));
+		const initGame = async () => {
+			// Se não tem playerId do contexto, redireciona
+			if (!contextLoading && !playerId) {
+				window.location.href = '/';
 				return;
 			}
 
-			// Se não tem player salvo, redireciona para tela de criação
-			window.location.href = '/';
+			if (playerId && playerName) {
+				setPlayerStats(prev => prev || { name: playerName });
+				setMessages([{ type: 'system', text: `✨ Bem-vindo de volta, ${playerName}. Sua jornada continua...` }]);
+				handleSend('olhar ao redor');
+			}
 		};
-		initOrLoadPlayer();
-	}, []);
+		initGame();
+	}, [playerId, playerName, contextLoading]);
 
 	useEffect(() => {
 		const hostileNpcs = npcsInScene.some(npc => npc.emotional_state === 'hostile');
@@ -57,32 +57,20 @@ export default function GamePage() {
 	}, [messages]);
 
 	const handleSend = async (inputText, pId = playerId) => {
-		if (!pId) {
-			setMessages(prev => [...prev, { type: 'error', text: '⚠️ Ainda criando o jogador...' }]);
+		if (!pId) {) => {
+		if (!playerId) {
+			setMessages(prev => [...prev, { type: 'error', text: '⚠️ Player não identificado. Recarregue a página.' }]);
 			return;
 		}
 
 		if (inputText) {
 			setMessages(prev => [...prev, { type: 'player', text: inputText }]);
-			setInputText('');
 		}
 		setSelectedNpc(null);
-		setObservedDesc('');
 		setIsLoading(true);
 
 		try {
-			const response = await fetch(
-				`http://localhost:8000/game/turn?player_id=${pId}&player_input=${encodeURIComponent(inputText)}`,
-				{ method: 'POST' }
-			);
-
-			if (!response.ok) {
-				const errData = await response.json();
-				throw new Error(errData.detail || 'Ocorreu um erro no servidor.');
-			}
-
-			const data = await response.json();
-			setMessages(prev => [...prev, { type: 'narrator', text: data.scene_description }]);
+			const data = await sendAction(inputTextype: 'narrator', text: data.scene_description }]);
 			if (data.action_result) {
 				setMessages(prev => [...prev, { type: 'action', text: data.action_result }]);
 			}
