@@ -1,14 +1,267 @@
 [
   {
+    "skill_id": "meteor_soul",
+    "name": "Meteor Soul",
+    "description": "Estocada letal de Northern Blade que ignora armadura e causa sangramento espiritual.",
+    "base_damage": 150,
+    "cost_type": "shadow_chi",
+    "cost_amount": 40,
+    "cooldown": 3,
+    "range": "melee",
+    "element": "shadow",
+    "effects": [
+      {
+        "type": "armor_penetration",
+        "value": 1.0,
+        "description": "Ignora 100% da armadura"
+      },
+      {
+        "type": "dot",
+        "damage_per_turn": 20,
+        "damage_type": "spiritual_bleed",
+        "duration": 3,
+        "description": "Sangramento espiritual"
+      }
+    ],
+    "is_silent_art": true,
+    "tier_requirement": 2
+  },
+  {
+    "skill_id": "wall_of_northern_heavens",
+    "name": "Wall of Northern Heavens",
+    "description": "Barreira defensiva que reflete 50% do dano recebido de volta ao atacante.",
+    "base_damage": 0,
+    "cost_type": "shadow_chi",
+    "cost_amount": 50,
+    "cooldown": 5,
+    "range": "self",
+    "element": "shadow",
+    "effects": [
+      {
+        "type": "buff",
+        "stat": "damage_reflection",
+        "value": 0.5,
+        "duration": 2,
+        "description": "Reflete 50% do dano"
+      },
+      {
+        "type": "buff",
+        "stat": "defense",
+        "value": 1.5,
+        "duration": 2,
+        "description": "Aumenta defesa em 50%"
+      }
+    ],
+    "is_silent_art": true,
+    "tier_requirement": 3
+  },
+  {
+    "skill_id": "shadowstep",
+    "name": "Shadowstep",
+    "description": "Teleporte curto que deixa imagem residual. Se a imagem for atacada, gera contra-ataque crítico.",
+    "base_damage": 80,
+    "cost_type": "shadow_chi",
+    "cost_amount": 30,
+    "cooldown": 2,
+    "range": "short",
+    "element": "shadow",
+    "effects": [
+      {
+        "type": "teleport",
+        "distance": "short",
+        "description": "Teleporte instantâneo"
+      },
+      {
+        "type": "afterimage",
+        "duration": 1,
+        "counter_damage_multiplier": 2.0,
+        "description": "Deixa imagem residual que causa contra-ataque crítico"
+      },
+      {
+        "type": "buff",
+        "stat": "evasion",
+        "value": 2.0,
+        "duration": 1,
+        "description": "Dobra evasão por 1 turno"
+      }
+    ],
+    "is_silent_art": true,
+    "tier_requirement": 2
+  },
+  {
+    "skill_id": "silent_strike",
+    "name": "Silent Strike",
+    "description": "Ataque básico de Shadow Chi que não aparece no radar espiritual.",
+    "base_damage": 60,
+    "cost_type": "shadow_chi",
+    "cost_amount": 15,
+    "cooldown": 0,
+    "range": "melee",
+    "element": "shadow",
+    "effects": [
+      {
+        "type": "stealth_bonus",
+        "value": 0.3,
+        "description": "30% de dano extra se não detectado"
+      }
+    ],
+    "is_silent_art": true,
+    "tier_requirement": 1
+  },
+  {
+    "skill_id": "qi_burst",
+    "name": "Qi Burst",
+    "description": "Explosão de Yuan Qi que causa dano em área.",
+    "base_damage": 100,
+    "cost_type": "yuan_qi",
+    "cost_amount": 35,
+    "cooldown": 4,
+    "range": "medium",
+    "element": "pure_qi",
+    "effects": [
+      {
+        "type": "aoe",
+        "radius": "medium",
+        "description": "Atinge múltiplos inimigos"
+      }
+    ],
+    "is_silent_art": false,
+    "tier_requirement": 2
+  },
+  {
+    "skill_id": "blood_essence_strike",
+    "name": "Blood Essence Strike",
+    "description": "Ataque que consome Quintessência para causar dano massivo.",
+    "base_damage": 200,
+    "cost_type": "quintessential_essence",
+    "cost_amount": 40,
+    "cooldown": 5,
+    "range": "melee",
+    "element": "blood",
+    "effects": [
+      {
+        "type": "lifesteal",
+        "value": 0.3,
+        "description": "Recupera 30% do dano como HP"
+      }
+    ],
+    "is_silent_art": false,
+    "tier_requirement": 3
+  },
+  {
+    "skill_id": "demon_transformation_strike",
+    "name": "Demon Transformation Strike",
+    "description": "Ataque que absorve cultivo do inimigo. Aumenta corrupção drasticamente.",
+    "base_damage": 120,
+    "cost_type": "yuan_qi",
+    "cost_amount": 50,
+    "cooldown": 6,
+    "range": "melee",
+    "element": "demonic",
+    "effects": [
+      {
+        "type": "cultivation_absorption",
+        "value": 2.0,
+        "description": "Absorve 2x o cultivo normal"
+      },
+      {
+        "type": "corruption_increase",
+        "value": 15,
+        "description": "Aumenta corrupção em 15 pontos"
+      }
+    ],
+    "is_silent_art": false,
+    "tier_requirement": 4
+  },
+  {
+    "skill_id": "heavenly_sword_array",
+    "name": "Heavenly Sword Array",
+    "description": "Cria formação de espadas de energia que atacam automaticamente.",
+    "base_damage": 50,
+    "cost_type": "yuan_qi",
+    "cost_amount": 60,
+    "cooldown": 8,
+    "range": "long",
+    "element": "array",
+    "effects": [
+      {
+        "type": "summon_array",
+        "duration": 3,
+        "attacks_per_turn": 3,
+        "description": "3 espadas atacam por 3 turnos"
+      }
+    ],
+    "is_silent_art": false,
+    "tier_requirement": 5
+  },
+  {
+    "skill_id": "phoenix_rebirth",
+    "name": "Phoenix Rebirth",
+    "description": "Habilidade exclusiva do Corpo Phoenix. Ressurreição automática.",
+    "base_damage": 0,
+    "cost_type": "quintessential_essence",
+    "cost_amount": 100,
+    "cooldown": 20,
+    "range": "self",
+    "element": "fire",
+    "effects": [
+      {
+        "type": "resurrection",
+        "hp_restored": 0.5,
+        "description": "Ressuscita com 50% HP"
+      },
+      {
+        "type": "purify_corruption",
+        "value": 50,
+        "description": "Remove 50 pontos de corrupção"
+      }
+    ],
+    "is_silent_art": false,
+    "tier_requirement": 6,
+    "constitution_requirement": "Phoenix Body"
+  },
+  {
+    "skill_id": "gravity_field",
+    "name": "Gravity Field (Black Sand Ultimate)",
+    "description": "Habilidade exclusiva do Corpo Black Sand. Campo de gravidade 10x.",
+    "base_damage": 0,
+    "cost_type": "quintessential_essence",
+    "cost_amount": 80,
+    "cooldown": 10,
+    "range": "area",
+    "element": "gravity",
+    "effects": [
+      {
+        "type": "debuff",
+        "stat": "speed",
+        "value": 0.1,
+        "duration": 3,
+        "description": "Reduz velocidade em 90%"
+      },
+      {
+        "type": "continuous_damage",
+        "damage_per_turn": 30,
+        "duration": 3,
+        "description": "Dano de esmagamento contínuo"
+      }
+    ],
+    "is_silent_art": false,
+    "tier_requirement": 5,
+    "constitution_requirement": "Black Sand Body"
+  },
+  {
     "skill_id": "fireball",
     "name": "Fireball",
     "description": "A basic fire spell.",
-    "damage_formula": "YuanQi * 1.5",
-    "cost": {
-      "type": "YuanQi",
-      "amount": 20
-    },
-    "cooldown": 5,
-    "element": "Fire"
+    "base_damage": 70,
+    "cost_type": "yuan_qi",
+    "cost_amount": 20,
+    "cooldown": 2,
+    "range": "medium",
+    "element": "fire",
+    "effects": [],
+    "is_silent_art": false,
+    "tier_requirement": 1
   }
 ]
+

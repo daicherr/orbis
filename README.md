@@ -1,82 +1,153 @@
-# Gem RPG: Orbis (Projeto Códice Triluna)
+# 🌙 CÓDICE TRILUNA - Cultivation RPG
 
-Este é um RPG híbrido que combina mecânicas de cultivo, combate visceral e gestão de facções, com uma forte integração de IA generativa para criar uma experiência de jogo dinâmica e emergente.
+Um RPG híbrido de cultivo que sintetiza três pilares da ficção oriental:
+- **Fundação Biológica:** Cang Yuan Tu (The Demon Hunter)
+- **Combate Visceral:** Legend of the Northern Blade  
+- **Gestão Maquiavélica:** Magic Emperor
 
-O projeto é baseado no GDD (Game Design Document) encontrado em `lore_library/GDD_Codex_Triluna.md`.
+## ✨ Funcionalidades Implementadas
 
-## Arquitetura
+### Sistema de Cultivo (GDD Completo)
+- ✅ **9 Tiers de Cultivo** (Fundação → Criação)
+- ✅ **Tríade Energética**: Quintessência, Chi das Sombras, Yuan Qi
+- ✅ **Sistema de Voo** (desbloqueado no Tier 3+)
+- ✅ **Física Dimensional** (Newtoniana, Maleável, Conceitual)
+- ✅ **6 Corpos Godfiend** (Black Sand, Eon Sea, Lightning Devastator, etc)
 
--   **Backend:** FastAPI (Python) com PostgreSQL e pgvector.
--   **Frontend:** Next.js (React) com Tailwind CSS.
--   **IA:** Google Gemini 1.5 Pro.
+### Combate Avançado
+- ✅ **Técnicas de Northern Blade**: Meteor Soul, Shadowstep, Wall of Northern Heavens
+- ✅ **Silent Arts**: Stealth baseado em Shadow Chi
+- ✅ **Impureza Dinâmica**: Corrupção varia por fonte (demônios = alta, humanos = baixa)
+- ✅ **Heart Demon System**: Corrupção = ((CultivoAbsorvido * Impureza) + (Traições * 5)) / Vontade
+- ✅ **Demon Transformation Art**: Absorve cultivo de inimigos derrotados
+
+### IA e Simulação do Mundo
+- ✅ **Profiler**: Gerencia emoções de NPCs e vinganças
+- ✅ **Strategist**: Move vilões hostis no mapa off-screen
+- ✅ **GossipMonger**: Gera rumores baseados em eventos do jogador
+- ✅ **Diplomat**: Gerencia relações de facções
+- ✅ **WorldSimulator**: Coordena todos os sistemas de IA
+
+### Frontend Redesenhado
+- ✅ **Glassmorphism UI** com tema cultivation
+- ✅ **Barras de energia animadas** (Quintessência, Shadow Chi, Yuan Qi)
+- ✅ **Badges de Tier dinâmicos**
+- ✅ **Interface de combate com skills visuais**
+- ✅ **Modal de inspeção de NPCs**
+- ✅ **Animações suaves e efeitos de brilho**
+- ✅ **Scrollbar customizada**
+- ✅ **Background animado com gradientes**
+
+## 🚀 Como Executar
+
+### 1. Backend (FastAPI)
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+### 2. Database (PostgreSQL com Docker)
+```bash
+docker-compose up -d
+```
+
+### 3. Frontend (Next.js)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Acesse: http://localhost:3000
+
+## 📁 Estrutura do Projeto
+
+```
+/ruleset_source
+  /mechanics
+    - cultivation_ranks.json   ✅ 9 tiers completos
+    - skills.json              ✅ 11 técnicas (incluindo Northern Blade)
+    - constitutions.json       ✅ 6 Godfiends + Procedurais
+    - items.json
+    - loot_tables.json
+  /lore_manual
+    - cultivation_rules.md
+    - world_physics.md
+    - bestiary_lore.md
+
+/backend
+  /app
+    /agents
+      - narrator.py            ✅ Gemini 3-Flash
+      - referee.py             ✅ Gemini 3-Pro
+      - architect.py           ✅ Geração procedural
+      - profiler.py            ✅ Sistema emocional
+      - strategist.py          ✅ IA tática
+      - gossip_monger.py       ✅ Rumores
+      - diplomat.py            ✅ Facções
+    /core
+      - combat_engine.py       ✅ Silent Arts, Impureza Dinâmica
+      - world_sim.py           ✅ Coordenação de IA
+    /database
+      - player.py              ✅ cultivation_tier, can_fly, physics_type
+
+/frontend
+  /src
+    /pages
+      - game.js                ✅ Redesign completo
+    /styles
+      - globals.css            ✅ Theme system cultivation
+```
+
+## 🎮 Mecânicas Principais
+
+### Tríade Energética
+| Energia | Função | Recurso |
+|---------|--------|---------|
+| **Quintessência** | Vitalidade, Defesa, Regeneração | Carne de Besta, Pílulas de Sangue |
+| **Chi das Sombras** | DPS, Stealth, Silent Arts | Meditação, Absorção de Yin |
+| **Yuan Qi** | Arrays, Alquimia, Ataques Mentais | Pedras Espirituais |
+
+### Sistema de Progressão
+- **Tier 1-2**: Física Newtoniana (sem voo)
+- **Tier 3-5**: Física Maleável (**voo desbloqueado**)
+- **Tier 6-9**: Física Conceitual (manipulação temporal)
+
+### Técnicas Especiais
+- **Meteor Soul**: Ignora 100% armadura + sangramento espiritual
+- **Shadowstep**: Teleporte com contra-ataque crítico
+- **Wall of Northern Heavens**: Barreira que reflete 50% dano
+- **Phoenix Rebirth**: Ressurreição (exclusivo Phoenix Body)
+- **Gravity Field**: Campo 10x gravidade (exclusivo Black Sand Body)
+
+## 🔮 Tecnologias
+
+- **Backend**: Python 3.12+, FastAPI, SQLModel
+- **Database**: PostgreSQL + pgvector (Docker)
+- **IA**: Google Gemini 1.5 (3-Flash, 3-Pro, 2.5-Flash)
+- **Frontend**: Next.js 14, React 18, TailwindCSS
+- **Deployment**: Docker Compose
+
+## 📚 Referências
+
+Baseado no **GDD_Codex_Triluna.md** (Game Design Document) que define:
+- Escala de poder (9 tiers rigorosos)
+- Sistema de corrupção (Heart Demon)
+- Fórmulas de combate
+- Corpos Godfiend
+- Tabela de progressão unificada
+
+## 🐛 Status
+
+✅ **COMPLETO** - Todas as mecânicas do GDD implementadas
+✅ **CONECTADO** - Todos os agentes integrados
+✅ **REDESENHADO** - Frontend modernizado com tema cultivation
 
 ---
 
-## Como Executar o Ambiente de Desenvolvimento
-
-### Pré-requisitos
-
--   Python 3.10+
--   Node.js e npm
--   PostgreSQL com a extensão `pgvector` instalada.
--   Um arquivo `.env` na pasta `backend/` (veja abaixo).
-
-### 1. Configuração do Backend
-
-a. **Crie um arquivo `.env`** na pasta `backend/`. Ele deve conter as credenciais do seu banco de dados e a chave da API do Gemini:
-
-   ```env
-   # Exemplo de backend/.env
-   DATABASE_URL="postgresql+asyncpg://seu_usuario:sua_senha@localhost/gemrpg"
-   GEMINI_API_KEY="sua_chave_de_api_aqui"
-   ```
-
-b. **Instale as dependências Python** (é recomendado usar um ambiente virtual):
-
-   ```bash
-   # Navegue até a pasta do backend
-   cd backend
-
-   # Crie e ative um ambiente virtual (opcional, mas recomendado)
-   python -m venv venv
-   source venv/bin/activate  # No Windows: venv\Scripts\activate
-
-   # Instale os pacotes
-   pip install -r requirements.txt
-   ```
-
-c. **Inicie o servidor do backend:**
-
-   ```bash
-   # Dentro da pasta backend/
-   uvicorn app.main:app --reload
-   ```
-
-   O servidor estará rodando em `http://localhost:8000`.
-
-### 2. Configuração do Frontend
-
-a. **Instale as dependências do Node.js:**
-
-   ```bash
-   # Navegue até a pasta do frontend
-   cd frontend
-
-   # Instale os pacotes
-   npm install
-   ```
-
-b. **Inicie o servidor de desenvolvimento do frontend:**
-
-   ```bash
-   # Dentro da pasta frontend/
-   npm run dev
-   ```
-
-   O servidor estará rodando em `http://localhost:3000`. Abra este endereço no seu navegador para ver a aplicação.
-
----
-
-## Próximos Passos
-
-Com ambos os servidores rodando, a aplicação estará funcional. O frontend se comunicará com o backend para criar o jogador e processar os turnos de jogo.
+**Criado por:** Felipe  
+**Data:** Janeiro 2025  
+**Repositório:** https://github.com/daicherr/orbis

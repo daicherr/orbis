@@ -1,0 +1,36 @@
+{
+  "currency_system": {
+    "base_unit": "Gold Tael (Mortal)",
+    "premium_unit": "Spirit Stone (Cultivator)",
+    "conversion_rates": {
+      "1_low_grade_spirit_stone": 1000,
+      "1_mid_grade_spirit_stone": 100,
+      "1_high_grade_spirit_stone": 100,
+      "1_quintessence_crystal": 50 
+    }
+  },
+  "resource_value_matrix": {
+    "consumables": {
+      "blood_refining_pill": { "base_cost": 50, "scarcity": "common", "notes": "Essencial para Marrow Cleansing (CYT)" },
+      "qi_gathering_pill": { "base_cost": 200, "scarcity": "uncommon", "notes": "Acelera recuperação de Chi" },
+      "heart_calming_incense": { "base_cost": 500, "scarcity": "rare", "notes": "Reduz o acúmulo de Heart Demon temporariamente" }
+    },
+    "materials": {
+      "black_sand_iron": { "base_cost": 1500, "unit": "kg", "origin": "Cang Yuan Tu Ref" },
+      "shadow_silk": { "base_cost": 800, "unit": "meter", "origin": "Northern Blade Ref" },
+      "spirit_beast_core_rank_1": { "base_cost": 300, "utility": "Alchemy/Arrays" },
+      "spirit_beast_core_rank_5": { "base_cost": 50000, "utility": "Godfiend Awakening Catalyst" }
+    },
+    "services": {
+      "array_maintenance": 100,
+      "information_broker": 50,
+      "assassination_mortal": 500,
+      "assassination_cultivator": 10000
+    }
+  },
+  "economic_modifiers": {
+    "war_tax": 1.5,
+    "sect_monopoly": 2.0,
+    "black_market_markup": 1.3
+  }
+}

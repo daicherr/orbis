@@ -85,3 +85,68 @@ class Architect:
         
         print(f"Inimigo '{enemy_data['name']}' e seus itens foram criados e salvos.")
         return bestiary_entry
+    
+    def generate_friendly_npc(self, location: str, role: str = "merchant") -> Dict[str, Any]:
+        """
+        Gera um NPC amigável (merchant, quest_giver, elder, healer, etc)
+        Role: merchant, quest_giver, elder, healer, trainer, informant
+        """
+        prompt = (
+            f"Você é um gerador de NPCs para um RPG de Cultivo Wuxia/Xianxia.\n"
+            f"Crie um NPC AMIGÁVEL com as seguintes características:\n"
+            f"- **Localização:** {location}\n"
+            f"- **Papel/Profissão:** {role}\n\n"
+            f"Responda APENAS com um objeto JSON com estas chaves:\n"
+            f"- `name` (string): Nome do NPC (ex: 'Mestre Feng, o Ferreiro')\n"
+            f"- `description` (string): Aparência e aura (50-100 palavras)\n"
+            f"- `personality` (array of strings): 3-5 traços (ex: ['wise', 'patient', 'greedy'])\n"
+            f"- `backstory` (string): História curta (30-50 palavras)\n"
+            f"- `dialogue_style` (string): Como ele fala (ex: 'formal e respeitoso', 'brincalhão')\n"
+            f"- `stats` (object): hp (number), defense (number), rank (number 1-9)\n\n"
+            f"JSON de Saída:"
+        )
+        
+        print(f"--- Gerando NPC amigável ({role}) para {location} ---")
+        npc_data = self.gemini_client.generate_json(prompt, task="story")
+        
+        if "error" in npc_data:
+            return npc_data
+        
+        # Add metadata
+        npc_data["role"] = role
+        npc_data["emotional_state"] = "friendly"
+        npc_data["current_location"] = location
+        
+        return npc_data
+    
+    def generate_neutral_npc(self, location: str, occupation: str = "traveler") -> Dict[str, Any]:
+        """
+        Gera um NPC neutro (traveler, guard, scholar, farmer, etc)
+        Pode se tornar amigável ou hostil baseado em ações do player
+        """
+        prompt = (
+            f"Você é um gerador de NPCs para um RPG de Cultivo Wuxia/Xianxia.\n"
+            f"Crie um NPC NEUTRO (nem amigável, nem hostil inicialmente):\n"
+            f"- **Localização:** {location}\n"
+            f"- **Ocupação:** {occupation}\n\n"
+            f"Responda APENAS com um objeto JSON com estas chaves:\n"
+            f"- `name` (string): Nome completo\n"
+            f"- `description` (string): Aparência (30-50 palavras)\n"
+            f"- `personality` (array of strings): 3 traços de personalidade\n"
+            f"- `motivation` (string): O que ele quer (ex: 'proteger sua família')\n"
+            f"- `stats` (object): hp, defense, rank (1-9)\n\n"
+            f"JSON de Saída:"
+        )
+        
+        print(f"--- Gerando NPC neutro ({occupation}) para {location} ---")
+        npc_data = self.gemini_client.generate_json(prompt, task="story")
+        
+        if "error" in npc_data:
+            return npc_data
+        
+        # Add metadata
+        npc_data["occupation"] = occupation
+        npc_data["emotional_state"] = "neutral"
+        npc_data["current_location"] = location
+        
+        return npc_data

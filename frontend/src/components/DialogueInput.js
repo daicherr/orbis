@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-const DialogueInput = ({ onSend }) => {
+const DialogueInput = ({ onSend, isLoading = false }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSend = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !isLoading) {
       onSend(inputValue);
       setInputValue('');
     }
@@ -17,21 +17,26 @@ const DialogueInput = ({ onSend }) => {
   };
 
   return (
-    <div className="mt-4 flex">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyPress={handleKeyPress}
-        className="flex-grow bg-cult-light border border-cult-gold text-cult-dark p-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-cult-gold"
-        placeholder="O que você faz?"
-      />
-      <button
-        onClick={handleSend}
-        className="bg-cult-gold text-cult-dark font-bold py-2 px-4 rounded-r-md hover:bg-yellow-600 transition duration-300"
-      >
-        Enviar
-      </button>
+    <div className="border-t-2 border-amber-500/30 p-4 bg-black/40">
+      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Descreva sua ação... (ex: 'explorar a floresta', 'meditar', 'atacar')"
+          className="flex-1 px-5 py-3 bg-black/60 border border-purple-500/40 rounded-xl focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-body text-white placeholder-white/40 backdrop-blur-sm"
+          disabled={isLoading}
+        />
+        <button
+          type="submit"
+          onClick={handleSend}
+          disabled={isLoading || !inputValue.trim()}
+          className="btn-celestial px-8 py-3 font-display disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? '⏳ Aguarde' : '⚔️ Agir'}
+        </button>
+      </form>
     </div>
   );
 };

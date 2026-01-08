@@ -1,58 +1,31 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const CombatInterface = ({ skills, targets, onAttack }) => {
-  const [selectedSkill, setSelectedSkill] = useState(null);
-  const [selectedTarget, setSelectedTarget] = useState(null);
-
-  const handleAttack = () => {
-    if (selectedSkill && selectedTarget) {
-      onAttack(selectedSkill, selectedTarget);
-      setSelectedSkill(null);
-      setSelectedTarget(null);
-    } else {
-      alert("Selecione uma habilidade e um alvo.");
-    }
-  };
+const CombatInterface = ({ skills, onSkillClick, isLoading = false }) => {
+  if (!skills || skills.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="mt-4 p-4 border-2 border-cult-red rounded-lg bg-cult-dark">
-      <div className="grid grid-cols-2 gap-4">
-        {/* Coluna de Habilidades */}
-        <div>
-          <h4 className="text-cult-gold font-bold mb-2">Habilidades</h4>
-          {skills.map(skill => (
-            <button
-              key={skill.id}
-              onClick={() => setSelectedSkill(skill.id)}
-              className={`block w-full text-left p-2 rounded mb-1 ${selectedSkill === skill.id ? 'bg-cult-red text-white' : 'bg-cult-secondary text-cult-light hover:bg-cult-red'}`}
-            >
-              {skill.name}
-            </button>
-          ))}
-        </div>
-        
-        {/* Coluna de Alvos */}
-        <div>
-          <h4 className="text-cult-gold font-bold mb-2">Alvos</h4>
-          {targets.map(target => (
-            <button
-              key={target.id}
-              onClick={() => setSelectedTarget(target.id)}
-              className={`block w-full text-left p-2 rounded mb-1 ${selectedTarget === target.id ? 'bg-cult-red text-white' : 'bg-cult-secondary text-cult-light hover:bg-cult-red'}`}
-            >
-              {target.name}
-            </button>
-          ))}
-        </div>
+    <div className="mystic-glass p-5 rounded-2xl border border-purple-500/30">
+      <h3 className="font-title text-sm text-celestial-gold mb-4 uppercase tracking-wider flex items-center gap-2">
+        <span className="text-lg">⚔️</span>
+        <span>Técnicas de Cultivo</span>
+      </h3>
+      <div className="grid grid-cols-2 gap-3">
+        {skills.map((skill) => (
+          <button
+            key={skill.id}
+            onClick={() => onSkillClick(skill.id)}
+            disabled={isLoading}
+            className="group relative p-4 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 hover:from-purple-800/60 hover:to-indigo-800/60 border border-purple-500/40 hover:border-purple-400/70 rounded-xl transition-all hover:scale-105 shadow-lg hover:shadow-glow-purple disabled:opacity-50 disabled:cursor-not-allowed"
+            title={skill.desc}
+          >
+            <div className="text-3xl mb-2 filter drop-shadow-lg">{skill.icon}</div>
+            <div className="font-display text-xs font-semibold leading-tight text-white/90">{skill.name}</div>
+            <div className="absolute inset-0 bg-purple-400/0 group-hover:bg-purple-400/10 rounded-xl transition-all pointer-events-none"></div>
+          </button>
+        ))}
       </div>
-      
-      <button
-        onClick={handleAttack}
-        disabled={!selectedSkill || !selectedTarget}
-        className="w-full mt-4 bg-cult-red text-white font-bold py-2 px-4 rounded hover:bg-red-700 transition duration-300 disabled:bg-gray-600"
-      >
-        Atacar
-      </button>
     </div>
   );
 };

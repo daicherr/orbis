@@ -1,4 +1,153 @@
 {
-  "monsters": {}
+  "loot_tables": {
+    "monsters": {
+      "iron_hide_boar": {
+        "guaranteed": [
+          {"item": "boar_meat", "quantity": [2, 4]},
+          {"item": "boar_leather", "quantity": 1}
+        ],
+        "rare": [
+          {"item": "boar_tusk", "quantity": 1, "chance": 0.3},
+          {"item": "minor_beast_core", "quantity": 1, "chance": 0.1}
+        ],
+        "legendary": [
+          {"item": "iron_essence_blood", "quantity": 1, "chance": 0.01}
+        ]
+      },
+      "shadow_fox": {
+        "guaranteed": [
+          {"item": "fox_fur", "quantity": 1}
+        ],
+        "rare": [
+          {"item": "shadow_core", "quantity": 1, "chance": 0.2}
+        ],
+        "legendary": [
+          {"item": "illusion_tail_bone", "quantity": 1, "chance": 0.05}
+        ]
+      },
+      "poison_mist_spider": {
+        "guaranteed": [
+          {"item": "spider_silk", "quantity": [1, 3]},
+          {"item": "venom_sac", "quantity": 1}
+        ],
+        "rare": [
+          {"item": "poison_gland", "quantity": 1, "chance": 0.25}
+        ]
+      },
+      "thunder_winged_hawk": {
+        "guaranteed": [
+          {"item": "thunder_feather", "quantity": [3, 7]},
+          {"item": "lightning_core", "quantity": 1}
+        ],
+        "rare": [
+          {"item": "hawk_talon", "quantity": 2, "chance": 0.4}
+        ],
+        "legendary": [
+          {"item": "storm_heart", "quantity": 1, "chance": 0.02}
+        ]
+      },
+      "earth_demon_bear": {
+        "guaranteed": [
+          {"item": "demon_bear_pelt", "quantity": 1},
+          {"item": "earth_core", "quantity": 1}
+        ],
+        "rare": [
+          {"item": "quintessence_crystal", "quantity": [1, 2], "chance": 0.5}
+        ],
+        "legendary": [
+          {"item": "demon_heart_blood", "quantity": 1, "chance": 0.1}
+        ]
+      },
+      "crimson_flame_snake": {
+        "guaranteed": [
+          {"item": "flame_blood", "quantity": [2, 5]},
+          {"item": "fire_scale", "quantity": [3, 8]}
+        ],
+        "rare": [
+          {"item": "crimson_fang", "quantity": 2, "chance": 0.3}
+        ]
+      },
+      "void_eater": {
+        "guaranteed": [
+          {"item": "void_core", "quantity": 1},
+          {"item": "demon_heart", "quantity": 1},
+          {"item": "abyssal_essence", "quantity": [3, 5]}
+        ],
+        "legendary": [
+          {"item": "void_crystal", "quantity": 1, "chance": 0.15}
+        ]
+      },
+      "nine_headed_hydra": {
+        "guaranteed": [
+          {"item": "hydra_scale", "quantity": [10, 20]},
+          {"item": "elemental_heart", "quantity": 9}
+        ],
+        "legendary": [
+          {"item": "immortal_blood", "quantity": [1, 3], "chance": 0.2}
+        ]
+      },
+      "ancient_dragon": {
+        "guaranteed": [
+          {"item": "dragon_scale", "quantity": [5, 10]},
+          {"item": "dragon_heart", "quantity": 1},
+          {"item": "dragon_soul_crystal", "quantity": 1}
+        ],
+        "legendary": [
+          {"item": "primordial_essence", "quantity": 1, "chance": 0.5},
+          {"item": "dragon_bloodline", "quantity": 1, "chance": 0.3}
+        ]
+      }
+    },
+    "exploration": {
+      "common_chest": {
+        "rolls": 1,
+        "items": [
+          {"item": "gold_tael", "quantity": [5, 15], "chance": 1.0},
+          {"item": "healing_salve", "quantity": [1, 3], "chance": 0.6},
+          {"item": "rusty_sword", "quantity": 1, "chance": 0.3}
+        ]
+      },
+      "cultivator_remains": {
+        "rolls": 2,
+        "items": [
+          {"item": "spirit_stone_low", "quantity": [3, 8], "chance": 0.8},
+          {"item": "broken_jade_slip", "quantity": 1, "chance": 0.5},
+          {"item": "qi_gathering_pill", "quantity": [1, 3], "chance": 0.4},
+          {"item": "personal_diary", "quantity": 1, "chance": 0.2}
+        ]
+      },
+      "ancient_ruin_chest": {
+        "rolls": 3,
+        "items": [
+          {"item": "spirit_stone_mid", "quantity": [5, 15], "chance": 0.7},
+          {"item": "manual_fragment_random", "quantity": 1, "chance": 0.3},
+          {"item": "unknown_seed", "quantity": 1, "chance": 0.2},
+          {"item": "ancient_coin", "quantity": [1, 5], "chance": 0.5}
+        ]
+      }
+    },
+    "boss_drops": {
+      "demon_general": {
+        "always": [
+          {"item": "demon_heart_blood", "quantity": [2, 4]},
+          {"item": "quintessence_crystal", "quantity": [1, 3]}
+        ],
+        "chance": [
+          {"item": "corrupted_artifact", "quantity": 1, "chance": 0.3},
+          {"item": "forbidden_manual_page", "quantity": 1, "chance": 0.2}
+        ]
+      },
+      "young_master_bodyguard": {
+        "always": [
+          {"item": "spirit_stone_mid", "quantity": [10, 20]},
+          {"item": "life_saving_talisman", "quantity": 1}
+        ],
+        "chance": [
+          {"item": "clan_token", "quantity": 1, "chance": 0.4},
+          {"item": "revenge_letter", "quantity": 1, "chance": 1.0}
+        ]
+      }
+    }
+  }
 }
 

@@ -5,10 +5,14 @@ from app.core.combat_engine import CombatEngine
 from app.core.loot_manager import loot_manager
 from app.database.repositories.player_repo import PlayerRepository
 from app.database.repositories.npc_repo import NpcRepository
+from app.database.repositories.gamelog_repo import GameLogRepository
+from app.database.repositories.hybrid_search import HybridSearchRepository
 from app.database.models.player import Player
+from app.database.models.npc import NPC
 from app.agents.scribe import Scribe
 from app.agents.architect import Architect
-from app.database.models.npc import NPC
+from app.agents.villains.profiler import Profiler
+from app.core.chronos import world_clock
 
 class Director:
     def __init__(
@@ -19,23 +23,109 @@ class Director:
         player_repo: PlayerRepository,
         npc_repo: NpcRepository,
         scribe: Scribe,
-        architect: Architect
+        architect: Architect,
+        profiler,
+        gamelog_repo: GameLogRepository = None,
+        memory_repo: HybridSearchRepository = None
     ):
         self.narrator = narrator
         self.referee = referee
         self.combat_engine = combat_engine
         self.player_repo = player_repo
         self.npc_repo = npc_repo
+        self.gamelog_repo = gamelog_repo
+        self.memory_repo = memory_repo
         self.scribe = scribe
         self.architect = architect
-        self.game_state = {} # Armazena o estado atual, como 'combat' ou 'explore'
-
-    async def _spawn_enemy_if_needed(self, player: Player, location: str, npcs_in_scene: list):
-        """Chama o Architect para criar um inimigo se a cena estiver vazia e for provocada."""
-        if not npcs_in_scene:
-            print("Cena vazia. Gerando um novo inimigo...")
-            # Tier e bioma seriam determinados pela localização do jogador no futuro
-            new_enemy_data = self.architect.generate_enemy(tier=player.rank, biome="Floresta")
+        self.profiler = profiler
+        self.game_state = {} # DEPRECATED: Use gamelog_repo instead
+    
+    async def _save_npc_memory(self, npc_id: int, event_type: str, details: str):
+        """Salva uma memória vetorial para um NPC"""
+        if not self.memory_repo:
+            return
+        
+        memory_content = f"[{event_type}] {details}"
+        try:
+            await self.memory_repo.add_memory(npc_id, memory_content, embedding_dim=128)
+            print(f"💾 Memória salva para NPC {npc_id}: {memory_content[:50]}...")
+        except Exception as e:
+            print(f"⚠️ Erro ao salvar memória: {e}")
+    
+    def _determine_location_type(self, location: str) -> str:
+        """Determina o tipo de localização baseado no nome"""
+        location_lower = location.lower()
+        if any(word in location_lower for word in ["vila", "cidade", "town", "village", "forja", "mercado"]):
+            return "settlement"
+        elif any(word in location_lower for word in ["floresta", "forest", "selva", "jungle"]):
+            return "wilderness"
+        elif any(word in location_lower for word in ["caverna", "cave", "dungeon", "ruínas"]):
+            return "dungeon"
+        elif any(word in location_lower for word in ["templo", "mosteiro", "temple", "monastery"]):
+            return "sacred"
+        else:
+            return "wilderness"
+    
+    async def _spawn_npc_if_needed(self, player: Player, location: str, npcs_in_scene: list):
+        """
+        Spawna NPCs baseado no tipo de localização
+        - Settlements: NPCs amigáveis (merchants, elders)
+        - Wilderness: Inimigos hostis
+        - Sacred: NPCs neutros (monks, guardians)
+        """
+        if npcs_in_scene:
+            return None  # Já tem NPCs na cena
+        
+        location_type = self._determine_location_type(location)
+        print(f"Cena vazia. Tipo de localização: {location_type}")
+        
+        if location_type == "settlement":
+            # Spawn friendly NPC
+            roles = ["merchant", "elder", "quest_giver", "healer", "blacksmith"]
+            import random
+            role = random.choice(roles)
+            
+            npc_data = self.architect.generate_friendly_npc(location, role)
+            if "error" not in npc_data:
+                new_npc = NPC(
+                    name=npc_data["name"],
+                    rank=npc_data["stats"]["rank"],
+                    current_hp=npc_data["stats"]["hp"],
+                    max_hp=npc_data["stats"]["hp"],
+                    defense=npc_data["stats"]["defense"],
+                    personality_traits=npc_data.get("personality", ["friendly"]),
+                    emotional_state="friendly",
+                    current_location=location
+                )
+                created_npc = await self.npc_repo.create(new_npc)
+                npcs_in_scene.append(created_npc)
+                return f"Você encontra {created_npc.name}, que acena em sua direção com um sorriso acolhedor."
+        
+        elif location_type == "sacred":
+            # Spawn neutral NPC
+            occupations = ["monk", "guardian", "scholar", "hermit"]
+            import random
+            occupation = random.choice(occupations)
+            
+            npc_data = self.architect.generate_neutral_npc(location, occupation)
+            if "error" not in npc_data:
+                new_npc = NPC(
+                    name=npc_data["name"],
+                    rank=npc_data["stats"]["rank"],
+                    current_hp=npc_data["stats"]["hp"],
+                    max_hp=npc_data["stats"]["hp"],
+                    defense=npc_data["stats"]["defense"],
+                    personality_traits=npc_data.get("personality", ["cautious"]),
+                    emotional_state="neutral",
+                    current_location=location
+                )
+                created_npc = await self.npc_repo.create(new_npc)
+                npcs_in_scene.append(created_npc)
+                return f"{created_npc.name} observa você com olhos atentos, avaliando suas intenções."
+        
+        else:
+            # Spawn enemy (wilderness/dungeon)
+            new_enemy_data = self.architect.generate_enemy(tier=player.rank, biome=location_type)
             
             if "error" not in new_enemy_data:
                 new_npc = NPC(
@@ -51,7 +141,12 @@ class Director:
                 created_npc = await self.npc_repo.create(new_npc)
                 npcs_in_scene.append(created_npc)
                 return f"Das sombras, um {created_npc.name} surge, rosnando ameaçadoramente!"
+        
         return None
+
+    async def _spawn_enemy_if_needed(self, player: Player, location: str, npcs_in_scene: list):
+        """DEPRECATED: Use _spawn_npc_if_needed instead"""
+        return await self._spawn_npc_if_needed(player, location, npcs_in_scene)
 
     async def process_player_turn(self, player_id: int, player_input: str) -> Dict[str, Any]:
         """
@@ -76,17 +171,39 @@ class Director:
                 player.willpower *= 0.9 # Aplica a penalidade
             # Lógica para Berserk e Morte seria mais complexa
             
-        # No futuro, a localização e os NPCs viriam do estado do jogo
-        current_location = "Floresta Assombrada"
-        npcs_in_scene = await self.npc_repo.get_all() # Simplificação
+        # ===== CHRONOS: ADVANCE TIME =====
+        world_clock.advance_turn()
+        current_time = world_clock.get_current_datetime()
+        
+        # Localização e NPCs na cena (FILTRADOS por localização)
+        current_location = player.current_location or "Floresta Assombrada"
+        npcs_in_scene = await self.npc_repo.get_by_location(current_location)
 
         # Lógica de Spawning JIT
         spawn_message = await self._spawn_enemy_if_needed(player, current_location, npcs_in_scene)
         if spawn_message:
             turn_events.append(spawn_message)
 
-        # 1. Narrar a cena
-        scene_description = self.narrator.generate_scene_description(player, current_location, npcs_in_scene)
+        # 1. Narrar a cena (com histórico do BANCO e MEMÓRIAS dos NPCs)
+        previous_narration = ""
+        is_first_scene = False
+        if self.gamelog_repo:
+            recent_turns = await self.gamelog_repo.get_recent_turns(player_id, limit=1)
+            if recent_turns:
+                previous_narration = recent_turns[-1].scene_description
+            else:
+                # Sem turnos anteriores = primeira cena
+                is_first_scene = True
+        
+        scene_description = await self.narrator.generate_scene_description_async(
+            player, 
+            current_location, 
+            npcs_in_scene,
+            player_last_action=player_input,
+            previous_narration=previous_narration,
+            memory_repo=self.memory_repo,
+            is_first_scene=is_first_scene
+        )
 
         # 2. Interpretar a ação do jogador
         action = self.referee.parse_player_action(player_input, player, npcs_in_scene)
@@ -115,6 +232,15 @@ class Director:
                 if target_npc.current_hp <= 0:
                     action_result_message = f"Você derrotou {target_npc.name}!"
                     
+                    # ===== MEMORY: NPCs próximos testemunham a morte =====
+                    for witness_npc in npcs_in_scene:
+                        if witness_npc.id != target_npc.id:
+                            await self._save_npc_memory(
+                                witness_npc.id,
+                                "WITNESSED_DEATH",
+                                f"Vi {player.name} derrotar {target_npc.name} em combate na {current_location}"
+                            )
+                    
                     # Lógica de Loot
                     # Supondo que o target_npc.name pode ser usado como monster_id
                     monster_id = target_npc.name.lower().replace(" ", "_") # Ex: "Serpente Vil" -> "serpente_vil"
@@ -133,16 +259,105 @@ class Director:
                     # Lógica de absorção de cultivo
                     if self.combat_engine.absorb_cultivation(player, target_npc):
                         action_result_message += f" Você sentiu seu poder aumentar!"
+                    
+                    # ===== PROFILER: Processar morte de NPC =====
+                    await self.profiler.process_event(
+                        event_type="player_killed_npc",
+                        actor=player,
+                        target=target_npc,
+                        npc_repo=self.npc_repo
+                    )
+                    
+                    # ===== WORLDSIMULATOR: Adicionar evento para rumor =====
+                    # Acessa o WorldSimulator global para registrar evento
+                    from app.main import app_state
+                    world_sim = app_state.get("world_simulator")
+                    if world_sim:
+                        world_sim.add_event({
+                            "type": "npc_death",
+                            "actor": player.name,
+                            "victim": target_npc.name,
+                            "location": player.current_location,
+                            "cultivation_tier": target_npc.cultivation_tier
+                        })
+                    
                     npcs_in_scene.remove(target_npc)
                 else:
                     await self.npc_repo.update(target_npc)
                     action_result_message = f"Você usa {skill_id} em {target_npc.name}, causando {damage} de dano! HP restante: {target_npc.current_hp}"
+                    
+                    # ===== MEMORY: NPC lembra do ataque =====
+                    await self._save_npc_memory(
+                        target_npc.id,
+                        "ATTACKED_BY_PLAYER",
+                        f"{player.name} me atacou com {skill_id} causando {damage} de dano na {current_location}"
+                    )
+                    
+                    # ===== PROFILER: Processar ataque a NPC (sem matar) =====
+                    await self.profiler.process_event(
+                        event_type="player_attacked_npc",
+                        actor=player,
+                        target=target_npc,
+                        npc_repo=self.npc_repo
+                    )
             else:
                 action_result_message = f"Alvo '{target_name}' não encontrado."
+        
+        elif action.get("intent") == "talk":
+            target_name = action.get("target_name")
+            target_npc = next((npc for npc in npcs_in_scene if npc.name == target_name), None)
+            
+            if target_npc:
+                # ===== MEMORY: NPC lembra da conversa =====
+                await self._save_npc_memory(
+                    target_npc.id,
+                    "TALKED_WITH_PLAYER",
+                    f"{player.name} iniciou conversa comigo na {current_location}. Disse: '{player_input}'"
+                )
+                
+                # Generate NPC response based on personality
+                response = f"{target_npc.name} ouve suas palavras atentamente."
+                if "friendly" in target_npc.emotional_state:
+                    response = f"{target_npc.name} sorri e responde cordialmente."
+                elif "hostile" in target_npc.emotional_state:
+                    response = f"{target_npc.name} rosna: 'Não tenho nada para dizer a você!'"
+                elif "neutral" in target_npc.emotional_state:
+                    response = f"{target_npc.name} observa você com cautela antes de falar."
+                
+                action_result_message = response
+            else:
+                action_result_message = f"Não há ninguém chamado '{target_name}' aqui."
+        
         # ... (outras intenções)
 
         # Adiciona os eventos do início do turno à mensagem de resultado
         full_action_result = ". ".join(turn_events + [action_result_message])
+        
+        # ===== GAMELOG: SAVE TURN TO DATABASE =====
+        if self.gamelog_repo:
+            turn_count = await self.gamelog_repo.get_turn_count(player_id)
+            npc_ids = [npc.id for npc in npcs_in_scene]
+            await self.gamelog_repo.save_turn(
+                player_id=player_id,
+                turn_number=turn_count + 1,
+                player_input=player_input,
+                scene_description=scene_description,
+                action_result=full_action_result,
+                location=current_location,
+                npcs_present=npc_ids,
+                world_time=current_time
+            )
+            
+            # ===== WORLDSIMULATOR: Run every 10 turns =====
+            if (turn_count + 1) % 10 == 0:
+                from app.main import app_state
+                world_sim = app_state.get("world_simulator")
+                if world_sim:
+                    print(f"[WORLDSIM] Executando tick de mundo (turno {turn_count + 1})...")
+                    await world_sim.run_simulation_tick(
+                        npc_repo=self.npc_repo,
+                        player_repo=self.player_repo
+                    )
             
         return {
             "scene_description": scene_description,

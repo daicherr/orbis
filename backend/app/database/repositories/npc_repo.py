@@ -23,6 +23,13 @@ class NpcRepository:
         """Busca todos os NPCs do banco de dados."""
         result = await self.session.exec(select(NPC))
         return result.all()
+    
+    async def get_by_location(self, location: str) -> List[NPC]:
+        """Busca NPCs em uma localização específica (filtro crítico)."""
+        result = await self.session.exec(
+            select(NPC).where(NPC.current_location == location)
+        )
+        return result.all()
 
     async def update(self, npc: NPC) -> NPC:
         """Atualiza os dados de um NPC no banco."""

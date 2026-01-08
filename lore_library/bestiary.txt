@@ -1,0 +1,90 @@
+═══════════════════════════════════════════════════════════════════════════
+                    BESTIÁRIO: CRIATURAS DO CREPÚSCULO
+═══════════════════════════════════════════════════════════════════════════
+
+RANK 1 (TIER 1-2): BESTAS COMUNS
+───────────────────────────────────────────────────────────────────────────
+
+1. IRON-HIDE BOAR (Javali de Pele de Ferro)
+   Habitat: Florestas densas
+   Threat Level: Baixo (Para iniciantes)
+   Description: Comum em florestas. Couro usado para armaduras iniciantes.
+   Combat Style: Cargas em linha reta
+   Loot: Boar Meat, Boar Leather, Boar Tusk (raro)
+   Notes: HP Tank - Alta defesa, baixa velocidade
+
+2. SHADOW FOX (Raposa das Sombras)
+   Habitat: Floresta Nublada (áreas com neblina)
+   Threat Level: Médio (Evasão alta)
+   Description: Rápida, difícil de acertar. Dropa núcleos para arrays de ilusão.
+   Combat Style: Hit-and-run, ataques furtivos
+   Loot: Fox Fur, Shadow Core (raro), Illusion Tail Bone (lendário)
+   Notes: Evasion - Requer alta precisão ou ataques de área
+
+3. POISON MIST SPIDER (Aranha da Névoa Venenosa)
+   Habitat: Cavernas escuras, pântanos
+   Threat Level: Médio (DoT perigoso)
+   Description: Causa dano contínuo através de névoa venenosa.
+   Combat Style: Cria teias e emite névoa tóxica
+   Loot: Spider Silk, Venom Sac, Poison Gland (raro)
+   Notes: DoT - Priorizar cura/antídotos
+
+───────────────────────────────────────────────────────────────────────────
+
+RANK 2-3 (TIER 3-4): BESTAS AVANÇADAS
+───────────────────────────────────────────────────────────────────────────
+
+4. THUNDER-WINGED HAWK (Falcão do Trovão)
+   Habitat: Montanhas altas, céu aberto
+   Threat Level: Alto (Ataque à distância)
+   Description: Ataca com relâmpagos à distância. Requer Godfiend de Agilidade para combater.
+   Combat Style: Voo + Ataques de raio
+   Loot: Thunder Feather, Lightning Core, Hawk Talon
+   Notes: Requer voo (Tier 3+) ou armas de longo alcance
+
+5. EARTH DEMON BEAR (Urso Demônio da Terra)
+   Habitat: Cavernas Cristalinas (níveis profundos)
+   Threat Level: Muito Alto (Boss de área)
+   Description: Pode manipular o terreno, criando paredes de pedra. Núcleo vale muito para Alquimistas.
+   Combat Style: Controle de terreno, força bruta
+   Loot: Demon Bear Pelt, Earth Core (garantido), Quintessence Crystal (raro)
+   Notes: Fight demorado - Alta defesa e HP
+
+6. CRIMSON FLAME SNAKE (Serpente de Chamas Carmesim)
+   Habitat: Vulcões, áreas de fogo espiritual
+   Threat Level: Alto (Elemento Fogo)
+   Description: Sangue usado para refinar pílulas de temperamento corporal.
+   Combat Style: Ataques de fogo, mordida venenosa
+   Loot: Flame Blood, Fire Scale, Crimson Fang (raro)
+   Notes: Fraco contra ataques de Água/Gelo
+
+───────────────────────────────────────────────────────────────────────────
+
+RANK 4+ (TIER 5-7): BESTAS LENDÁRIAS
+───────────────────────────────────────────────────────────────────────────
+
+7. VOID-EATER (Devorador do Vazio)
+   Habitat: Fenda do Mundo (Demon Realm)
+   Threat Level: Extremo (Boss de Raid)
+   Description: Uma massa de tentáculos e bocas que consome Chi. Imune a ataques de energia, requer dano físico bruto (Godfiend Strength).
+   Combat Style: Absorção de energia, tentáculos múltiplos
+   Loot: Void Core, Demon Heart, Abyssal Essence
+   Notes: ANTI-MAGIC - Apenas ataques físicos puros funcionam
+
+8. NINE-HEADED HYDRA (Hidra de Nove Cabeças)
+   Habitat: Pântanos ancestrais
+   Threat Level: Extremo (Boss mundial)
+   Description: Cada cabeça tem um elemento diferente. Regenera 10% HP por turno se não for cauterizada.
+   Combat Style: Ataques multi-elemento, regeneração
+   Loot: Hydra Scale (garantido), Elemental Heart (x9), Immortal Blood
+   Notes: Requer fogo/cauterização para evitar regeneração
+
+9. THE ANCIENT DRAGON (Dragão Ancestral)
+   Habitat: Montanha Arcaica (Archean Mountain)
+   Threat Level: APOCALÍPTICO (Endgame Boss)
+   Description: Destrói cidades. Escamas impenetráveis exceto por "Intent" (Vontade) concentrada.
+   Combat Style: Voo, sopro de chamas celestiais, pressão de cultivo
+   Loot: Dragon Scale (lendário), Dragon Heart, Dragon Soul Crystal
+   Notes: Requer Tier 7+ e alta Vontade (Martial Intent) para causar dano
+
+═══════════════════════════════════════════════════════════════════════════

@@ -7,21 +7,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'cult-dark': '#1a1a1a',      // Preto profundo para fundos
-        'cult-gold': '#c4a66a',      // Dourado para detalhes e textos importantes
-        'cult-red': '#8c2d2d',       // Vermelho escuro para acentos e alertas
-        'cult-light': '#f0e6d2',     // Um tom de pergaminho para texto principal
-        'cult-secondary': '#4a4a4a', // Cinza escuro para bordas e elementos secundários
+        celestial: {
+          deep: '#0f0419',
+          purple: '#2e1065',
+          blue: '#1e3a8a',
+          gold: '#d4af37',
+          jade: '#10b981',
+        },
       },
       fontFamily: {
-        'serif': ['"EB Garamond"', 'serif'], // Uma fonte serifada elegante
+        title: ['Cinzel', 'serif'],
+        display: ['Playfair Display', 'serif'],
+        body: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
-      backgroundImage: {
-        'paper-scroll': "url('/scroll-background.png')", // Imagem de fundo para a janela do jogo
+      boxShadow: {
+        'glow-purple': '0 0 20px rgba(168, 85, 247, 0.5)',
+        'glow-gold': '0 0 25px rgba(212, 175, 55, 0.4)',
       },
-      borderColor: {
-        'cult-gold': '#c4a66a',
-      }
     },
   },
   plugins: [],

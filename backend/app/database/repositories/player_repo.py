@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from app.database.models.player import Player
@@ -7,7 +7,15 @@ class PlayerRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create(self, name: str) -> Player:
+    async def create(
+        self, 
+        name: str,
+        appearance: Optional[str] = None,
+        constitution_type: str = "Mortal",
+        origin_location: str = "Floresta Nublada",
+        backstory: Optional[str] = None,
+        constitution: str = "Mortal Body"
+    ) -> Player:
         """Cria um novo jogador com valores padrão, evitando duplicatas por nome."""
         # Verifica se já existe um jogador com este nome
         existing = await self.session.exec(
@@ -17,7 +25,15 @@ class PlayerRepository:
         if player:
             return player
 
-        new_player = Player(name=name)
+        new_player = Player(
+            name=name,
+            appearance=appearance,
+            constitution_type=constitution_type,
+            origin_location=origin_location,
+            backstory=backstory,
+            constitution=constitution,
+            current_location=origin_location  # Começa na origem
+        )
         self.session.add(new_player)
         await self.session.commit()
         await self.session.refresh(new_player)
@@ -41,4 +57,9 @@ class PlayerRepository:
         await self.session.commit()
         await self.session.refresh(player)
         return player
+
+    async def get_all(self) -> List[Player]:
+        """Retorna todos os jogadores."""
+        result = await self.session.exec(select(Player))
+        return result.all()
 

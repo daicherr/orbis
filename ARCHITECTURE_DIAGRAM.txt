@@ -1,0 +1,194 @@
+```
+═══════════════════════════════════════════════════════════════════════════════
+                    GEM RPG ORBIS - ARQUITETURA COMPLETA
+                           [TODAS AS LIGAÇÕES ✅]
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              FRONTEND (Next.js)                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  GameWindow.js  │  NpcInspector.js  │  PlayerHUD.js  │  CombatInterface.js │
+│       ↓              ↓                    ↓                    ↓             │
+│   POST /game/turn    GET /npc/{id}       (state)        (skills)            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      ↓ HTTP
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           BACKEND (FastAPI)                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  main.py (API Gateway)                                                       │
+│    ├── Lifespan Startup:                                                     │
+│    │   ├── GeminiClient          [Gemini 3-Flash/Pro/2.5-Flash]             │
+│    │   ├── Narrator               ✅ Connected                              │
+│    │   ├── Referee                ✅ Connected                              │
+│    │   ├── Stylizer               ✅ Connected                              │
+│    │   ├── Scribe                 ✅ Connected                              │
+│    │   ├── Architect              ✅ Connected                              │
+│    │   ├── Profiler               ✅ NOVO - Connected                       │
+│    │   └── WorldSimulator         ✅ NOVO - Connected                       │
+│    │       ├── Strategist         ✅ NOVO - Connected                       │
+│    │       ├── Diplomat           ✅ NOVO - Connected                       │
+│    │       └── GossipMonger       ✅ NOVO - Connected                       │
+│    │                                                                          │
+│    └── Endpoints:                                                            │
+│        ├── POST /player/create                                               │
+│        ├── POST /game/turn  ────────┐                                        │
+│        ├── GET  /npc/{id}/observe   │                                        │
+│        └── POST /simulation/tick ───┼──────┐                                 │
+└─────────────────────────────────────┼──────┼─────────────────────────────────┘
+                                      ↓      ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        DIRECTOR (Game Loop Orchestrator)                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  process_player_turn(player_input)                                           │
+│    ↓                                                                          │
+│  1. Referee.parse_action(input)  ───→ [Gemini 3-Pro]                        │
+│    ↓                                                                          │
+│  2. CombatEngine.execute_attack()                                            │
+│    ├─→ SkillManager.get_skill()                                             │
+│    ├─→ LootManager.calculate_loot()                                         │
+│    └─→ DataManager.load_items()                                             │
+│    ↓                                                                          │
+│  3. IF NPC_KILLED:                                                           │
+│    ├─→ Profiler.process_event() ✅ NOVO                                     │
+│    │     ├─ Update emotional_state                                          │
+│    │     └─ Create vendetta_target                                          │
+│    └─→ WorldSimulator.add_event() ✅ NOVO                                   │
+│          └─ Queue rumor generation                                           │
+│    ↓                                                                          │
+│  4. Narrator.narrate_scene() ───→ [Gemini 3-Flash]                          │
+│    ├─ Load lore from lore_library/                                          │
+│    └─ Load rules from ruleset_source/                                       │
+│    ↓                                                                          │
+│  5. Return Response                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                    ↓                                    ↓
+┌──────────────────────────────────────┐  ┌────────────────────────────────────┐
+│   CORE ENGINES (Business Logic)     │  │  AI AGENTS (Gemini-Powered)        │
+├──────────────────────────────────────┤  ├────────────────────────────────────┤
+│  ├─ CombatEngine                     │  │  ├─ Narrator [3-Flash]             │
+│  │   ├─ SkillManager                 │  │  ├─ Referee [3-Pro]                │
+│  │   ├─ LootManager                  │  │  ├─ Stylizer [3-Flash]             │
+│  │   └─ DiceRoller                   │  │  ├─ Scribe [3-Flash]               │
+│  ├─ Chronos (World Clock)            │  │  ├─ Architect [3-Flash]            │
+│  ├─ DataManager                      │  │  ├─ Profiler [Logic] ✅ NOVO      │
+│  └─ WorldSimulator ✅ NOVO           │  │  └─ WorldSimulator                 │
+│      ├─ Strategist                   │  │      ├─ Strategist [Logic]         │
+│      ├─ Diplomat                     │  │      ├─ Diplomat [Logic]           │
+│      └─ GossipMonger                 │  │      └─ GossipMonger [Logic]       │
+└──────────────────────────────────────┘  └────────────────────────────────────┘
+                    ↓                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATABASE LAYER (SQLModel)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ├─ PlayerRepository                                                         │
+│  │   ├─ create(name)                                                         │
+│  │   ├─ get_by_id(id)                                                        │
+│  │   ├─ update(player)                                                       │
+│  │   └─ get_all() ✅ NOVO                                                   │
+│  │                                                                            │
+│  ├─ NpcRepository                                                            │
+│  │   ├─ create(npc_data)                                                     │
+│  │   ├─ get_by_id(id)                                                        │
+│  │   ├─ update(npc)                                                          │
+│  │   └─ get_all()                                                            │
+│  │                                                                            │
+│  └─ HybridSearchRepository (SQL + pgvector)                                  │
+│      ├─ add_memory(npc_id, content)                                          │
+│      └─ find_relevant_memories(npc_id, query)                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    POSTGRESQL + pgvector (Docker)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Tables:                                                                      │
+│    ├─ player (id, name, cultivation_tier, hp, qi, inventory, location...)   │
+│    ├─ npc (id, name, emotional_state, vendetta_target, current_location...) │
+│    ├─ memory (id, npc_id, content, embedding[])                             │
+│    ├─ quest (id, title, deadline, status...)                                 │
+│    └─ world_state (id, economy, factions, climate...)                        │
+│                                                                               │
+│  Port: localhost:5433                                                        │
+│  Database: rpg_cultivo                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      ↑
+                                      │
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        DATA SOURCES (Static Files)                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ruleset_source/mechanics/                                                   │
+│    ├─ classes.json           → CombatEngine                                  │
+│    ├─ skills.json            → SkillManager                                  │
+│    ├─ items.json             → DataManager                                   │
+│    ├─ loot_tables.json       → LootManager                                   │
+│    ├─ constitutions.json     → Architect                                     │
+│    └─ cultivation_ranks.json → CombatEngine                                  │
+│                                                                               │
+│  lore_library/                                                               │
+│    ├─ bestiary.txt           → Architect                                     │
+│    ├─ world_history.txt      → Narrator                                      │
+│    └─ GDD_Codex_Triluna.md   → Narrator                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      ↑
+                                      │
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        EXTERNAL SERVICES                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Google Gemini API (google-genai SDK)                                       │
+│    ├─ models/gemini-3-flash-preview      (Story/Lore)                       │
+│    ├─ models/gemini-3-pro-preview        (Combat/Strategy)                  │
+│    └─ models/gemini-2.5-flash-preview    (Fast Operations)                  │
+│                                                                               │
+│  Fallback Mode: If API_KEY_INVALID → Offline placeholders                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                            EVENT FLOW (NOVO ✅)
+═══════════════════════════════════════════════════════════════════════════════
+
+[PLAYER KILLS NPC]
+    ↓
+Director.process_player_turn()
+    ├─→ CombatEngine calculates damage
+    ├─→ IF NPC.hp <= 0:
+    │   ├─→ Profiler.process_event("player_killed_npc") ✅
+    │   │   └─→ Updates related NPCs' emotional_state
+    │   │       (e.g., father gets vendetta_target = player.id)
+    │   │
+    │   └─→ WorldSimulator.add_event({"type": "npc_death"}) ✅
+    │       └─→ Queued for rumor generation
+    │
+    └─→ Narrator generates literary description
+
+[SIMULATION TICK] (POST /simulation/tick)
+    ↓
+WorldSimulator.run_simulation_tick()
+    ├─→ Strategist: Moves hostile NPCs toward player
+    ├─→ GossipMonger: Processes queued events → generates rumors
+    └─→ Diplomat: Evaluates faction relations
+    ↓
+DailyTickSimulator.run_daily_simulation()
+    ├─→ Economy: Adjusts prices based on supply/demand
+    ├─→ Ecology: Migrates monster populations
+    └─→ Lineage: Processes hereditary vendettas
+
+═══════════════════════════════════════════════════════════════════════════════
+                         INTEGRATION STATUS
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Frontend → Backend API
+✅ Backend → PostgreSQL
+✅ Backend → Gemini API
+✅ Main → All Core Agents (Narrator, Referee, Stylizer, Scribe, Architect)
+✅ Main → WorldSimulator (Strategist, Diplomat, GossipMonger)
+✅ Director → Profiler (on combat events) ✅ NOVO
+✅ Director → WorldSimulator (event queue) ✅ NOVO
+✅ CombatEngine → Data Files (JSON ruleset)
+✅ Narrator → Lore Files (Markdown)
+✅ Repositories → Database Models
+✅ WorldSimulator → NpcRepository & PlayerRepository ✅ NOVO
+✅ /simulation/tick → WorldSimulator singleton ✅ NOVO
+
+══════════════════════════════════════════════════════════════════════════════
+                    NENHUMA INTEGRAÇÃO FALTANDO ✅
+══════════════════════════════════════════════════════════════════════════════
+```

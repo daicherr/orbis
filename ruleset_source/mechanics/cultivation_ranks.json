@@ -1,0 +1,224 @@
+{
+  "tiers": [
+    {
+      "tier": 1,
+      "rank_name": "Fundação",
+      "equivalent_cyt": "Mortal / Marrow Cleansing",
+      "equivalent_nb": "3rd/2nd Rank Warrior",
+      "equivalent_me": "Qi Condensation",
+      "level_range": [1, 10],
+      "description": "Humano aprimorado. Sem voo.",
+      "physics_type": "newtonian",
+      "can_fly": false,
+      "max_hp_multiplier": 1.0,
+      "qi_multiplier": 1.0,
+      "abilities": [
+        "enhanced_strength",
+        "basic_qi_manipulation"
+      ],
+      "xp_to_next_tier": 1000,
+      "unlock_requirements": {
+        "min_level": 10,
+        "items_required": ["spirit_stone"],
+        "trials": []
+      }
+    },
+    {
+      "tier": 2,
+      "rank_name": "Despertar",
+      "equivalent_cyt": "Mortal Shedding",
+      "equivalent_nb": "1st Rank Warrior",
+      "equivalent_me": "Bone Tempering",
+      "level_range": [11, 20],
+      "description": "Pele de ferro. Uso limitado de Chi externo.",
+      "physics_type": "newtonian",
+      "can_fly": false,
+      "max_hp_multiplier": 1.5,
+      "qi_multiplier": 1.3,
+      "abilities": [
+        "iron_skin",
+        "external_chi_emission"
+      ],
+      "xp_to_next_tier": 2500,
+      "unlock_requirements": {
+        "min_level": 20,
+        "items_required": ["bone_tempering_pill"],
+        "trials": []
+      }
+    },
+    {
+      "tier": 3,
+      "rank_name": "Ascensão",
+      "equivalent_cyt": "Core Cloud Godfiend",
+      "equivalent_nb": "Peak Realm",
+      "equivalent_me": "Radiant Stage",
+      "level_range": [21, 30],
+      "description": "Voo desbloqueado. Ataques de energia médio alcance.",
+      "physics_type": "malleable",
+      "can_fly": true,
+      "max_hp_multiplier": 2.0,
+      "qi_multiplier": 2.0,
+      "abilities": [
+        "flight",
+        "medium_range_energy_attacks",
+        "qi_sensing"
+      ],
+      "xp_to_next_tier": 5000,
+      "unlock_requirements": {
+        "min_level": 30,
+        "items_required": ["cloud_core_pill"],
+        "trials": ["heavenly_tribulation_minor"]
+      }
+    },
+    {
+      "tier": 4,
+      "rank_name": "Transcendência",
+      "equivalent_cyt": "Great Solar Godfiend",
+      "equivalent_nb": "Transcendent Realm",
+      "equivalent_me": "Ethereal Stage",
+      "level_range": [31, 40],
+      "description": "Corpo de energia. Imune a armas não-mágicas.",
+      "physics_type": "malleable",
+      "can_fly": true,
+      "max_hp_multiplier": 3.0,
+      "qi_multiplier": 3.0,
+      "abilities": [
+        "energy_body",
+        "immunity_mundane_weapons",
+        "aura_projection"
+      ],
+      "xp_to_next_tier": 10000,
+      "unlock_requirements": {
+        "min_level": 40,
+        "items_required": ["solar_essence"],
+        "trials": ["heart_demon_tribulation"]
+      }
+    },
+    {
+      "tier": 5,
+      "rank_name": "Soberania",
+      "equivalent_cyt": "Darkstar Godfiend",
+      "equivalent_nb": "Unrestrained Realm",
+      "equivalent_me": "Spirit King",
+      "level_range": [41, 50],
+      "description": "Manipulação espacial (Teleporte).",
+      "physics_type": "malleable",
+      "can_fly": true,
+      "max_hp_multiplier": 4.0,
+      "qi_multiplier": 4.0,
+      "abilities": [
+        "spatial_manipulation",
+        "short_range_teleport",
+        "domain_creation_basic"
+      ],
+      "xp_to_next_tier": 20000,
+      "unlock_requirements": {
+        "min_level": 50,
+        "items_required": ["void_crystal"],
+        "trials": ["spatial_tribulation"]
+      }
+    },
+    {
+      "tier": 6,
+      "rank_name": "Divindade",
+      "equivalent_cyt": "Regis Godfiend",
+      "equivalent_nb": "Profound Realm",
+      "equivalent_me": "Saint/Sovereign",
+      "level_range": [51, 60],
+      "description": "Criação de dimensão de bolso (Domain).",
+      "physics_type": "conceptual",
+      "can_fly": true,
+      "max_hp_multiplier": 5.0,
+      "qi_multiplier": 5.0,
+      "abilities": [
+        "pocket_dimension",
+        "domain_mastery",
+        "law_comprehension_basic"
+      ],
+      "xp_to_next_tier": 50000,
+      "unlock_requirements": {
+        "min_level": 60,
+        "items_required": ["divine_spark"],
+        "trials": ["dao_heart_tribulation"]
+      }
+    },
+    {
+      "tier": 7,
+      "rank_name": "Imortalidade",
+      "equivalent_cyt": "True God",
+      "equivalent_nb": "Heaven & Earth",
+      "equivalent_me": "Emperor Realm",
+      "level_range": [61, 70],
+      "description": "Imortalidade verdadeira. Ressurreição automática.",
+      "physics_type": "conceptual",
+      "can_fly": true,
+      "max_hp_multiplier": 7.0,
+      "qi_multiplier": 7.0,
+      "abilities": [
+        "true_immortality",
+        "resurrection",
+        "time_manipulation_minor"
+      ],
+      "xp_to_next_tier": 100000,
+      "unlock_requirements": {
+        "min_level": 70,
+        "items_required": ["immortal_fruit"],
+        "trials": ["heavenly_tribulation_major"]
+      }
+    },
+    {
+      "tier": 8,
+      "rank_name": "Ancestral",
+      "equivalent_cyt": "Ancestor",
+      "equivalent_nb": "Origin",
+      "equivalent_me": "Venerable",
+      "level_range": [71, 80],
+      "description": "Manipulação de leis universais.",
+      "physics_type": "conceptual",
+      "can_fly": true,
+      "max_hp_multiplier": 10.0,
+      "qi_multiplier": 10.0,
+      "abilities": [
+        "law_manipulation",
+        "reality_warping",
+        "timeline_observation"
+      ],
+      "xp_to_next_tier": 500000,
+      "unlock_requirements": {
+        "min_level": 80,
+        "items_required": ["primordial_essence"],
+        "trials": ["dao_tribulation"]
+      }
+    },
+    {
+      "tier": 9,
+      "rank_name": "Criação",
+      "equivalent_cyt": "Creation Realm",
+      "equivalent_nb": "Heaven & Earth Apex",
+      "equivalent_me": "Universe Realm",
+      "level_range": [81, 100],
+      "description": "Criação de vida e leis. Deus-criador.",
+      "physics_type": "conceptual",
+      "can_fly": true,
+      "max_hp_multiplier": 20.0,
+      "qi_multiplier": 20.0,
+      "abilities": [
+        "life_creation",
+        "law_creation",
+        "universe_creation",
+        "omniscience_limited"
+      ],
+      "xp_to_next_tier": null,
+      "unlock_requirements": {
+        "min_level": 100,
+        "items_required": ["chaos_seed"],
+        "trials": ["final_tribulation"]
+      }
+    }
+  ],
+  "tier_benefits": {
+    "stat_scaling": "Each tier multiplies base stats by the tier multipliers",
+    "ability_unlocks": "New abilities unlock at each tier breakthrough",
+    "cultivation_speed": "Higher tiers require exponentially more XP but grant massive power increases"
+  }
+}

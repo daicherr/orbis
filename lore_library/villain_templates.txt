@@ -1,0 +1,57 @@
+═══════════════════════════════════════════════════════════════════════════
+                    ARQUÉTIPOS DE VILÕES E ANTAGONISTAS
+═══════════════════════════════════════════════════════════════════════════
+
+TEMPLATE 1: CORRUPTED GODFIEND (Godfiend Corrompido)
+───────────────────────────────────────────────────────────────────────────
+Origin: Cang Yuan Tu / Magic Emperor
+Description: Um Godfiend que falhou em controlar seu poder. Seu corpo sofreu mutações grotescas (escamas de ferro, braços extras) devido à instabilidade genética.
+Motivation: Consumir Quintessência de outros para estabilizar seu corpo.
+Stats Focus: High HP, High Physical Def, Low Mental Res.
+Special Ability: "Berserk Blood" - Ao chegar a 50% de HP, o dano dobra, mas a precisão cai.
+Weakness: Ataques mentais (Essence Soul).
+
+───────────────────────────────────────────────────────────────────────────
+
+TEMPLATE 2: SCHEMING ELDER (Ancião Conspirador)
+───────────────────────────────────────────────────────────────────────────
+Origin: Magic Emperor
+Description: Um cultivador fisicamente fraco, geralmente idoso ou com aparência doentia, sempre cercado por guarda-costas. Luta usando o ambiente.
+Motivation: Poder político, acumular Pedras Espirituais, roubar segredos de linhagem.
+Stats Focus: High Essence Soul (Mental), High Yuan Qi, Low HP.
+Special Ability: "Trapping Array" - Pode gastar um turno para criar uma zona de debuff (Lentidão/Veneno) no campo de batalha.
+Weakness: Combate corpo a corpo súbito (Blitz).
+
+───────────────────────────────────────────────────────────────────────────
+
+TEMPLATE 3: DEMONIC SHADOW ASSASSIN (Assassino das Sombras Demoníacas)
+───────────────────────────────────────────────────────────────────────────
+Origin: Northern Blade
+Description: Guerreiros que utilizam "Artes Demoníacas" que distorcem o som e a luz. Vestem-se com mantos que parecem feitos de sombras vivas.
+Motivation: Vingança contra a Aliança Central, caos puro.
+Stats Focus: Extreme Agility, High Critical Rate, Low Defense.
+Special Ability: "Shadow Step" - Pode se teleportar para as costas do jogador se estiver em uma área escura.
+Weakness: Ataques de área (AoE) que não exigem mira precisa.
+
+───────────────────────────────────────────────────────────────────────────
+
+TEMPLATE 4: YOUNG MASTER (Jovem Mestre Arrogante)
+───────────────────────────────────────────────────────────────────────────
+Origin: Generic Cultivation Trope (Magic Emperor style)
+Description: Arrogante, rico, cheio de pílulas de cura e artefatos defensivos, mas sem habilidade real de combate.
+Motivation: "Face" (Reputação), humilhar o protagonista.
+Stats Focus: Average Stats, mas possui "Life Saving Items" (ativa escudo automático ao morrer 1 vez).
+Minions: Sempre acompanhado por 2 "Elders" de nível superior.
+
+───────────────────────────────────────────────────────────────────────────
+
+TEMPLATE 5: POSSESSED CULTIVATOR (Cultivador Possuído)
+───────────────────────────────────────────────────────────────────────────
+Origin: Cang Yuan Tu (Demon Lore)
+Description: Um humano que foi possuído por um demônio da Fenda do Mundo. Aparência normal, mas olhos vazios e aura fria.
+Motivation: Espalhar corrupção, abrir portais demoníacos.
+Stats Focus: Balanced, mas regeneração passiva de HP.
+Special Ability: "Possession Transfer" - Se morto, tenta possuir o atacante (teste de Vontade).
+Weakness: Exorcismo, Chamas Sagradas, Ataques de Luz.
+
+═══════════════════════════════════════════════════════════════════════════
