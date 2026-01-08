@@ -129,158 +129,87 @@ export default function GamePage() {
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 			</Head>
 
-			<div className="h-screen celestial-bg flex flex-col overflow-hidden">
-				{/* Header Celestial */}
-				<div className="mystic-glass-gold m-4 p-4 rounded-2xl border-t-2 border-amber-500/50">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-6">
-							<h1 className="font-title text-2xl text-celestial-gold text-mystic-glow">
-								Códice Triluna
+			{/* === MAIN HUD CONTAINER (AAA Game Style) === */}
+			<div className="h-screen w-screen nebula-void overflow-hidden flex flex-col">
+				{/* === TOP BAR (Ornate Header with Mystical Glow) === */}
+				<div className="glass-gold m-6 p-5 rounded-2xl border-ornate-gold relative">
+					<div className="flex items-center justify-between relative z-10">
+						<div className="flex items-center gap-8">
+							<h1 className="font-title text-3xl text-gold-glow tracking-wider">
+								✦ CÓDICE TRILUNA ✦
 							</h1>
 							<WorldClock />
 						</div>
 						{playerStats && (
-							<div className="flex items-center gap-4">
+							<div className="flex items-center gap-6">
 								<div className="text-right">
-									<div className="font-display text-base font-semibold text-celestial-gold">{playerStats.name}</div>
-									<div className="font-body text-xs text-white/70">{getTierName(playerStats.cultivation_tier || 1)}</div>
+									<div className="font-display text-xl font-bold text-gold-glow drop-shadow-lg">{playerStats.name}</div>
+									<div className="font-body text-sm text-slate-300 tracking-wide">{getTierName(playerStats.cultivation_tier || 1)}</div>
 								</div>
-								<div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 flex items-center justify-center text-xl font-bold shadow-glow-purple border-2 border-purple-400/30">
-									{playerStats.cultivation_tier || 1}
+								{/* Avatar with Pulsing Glow */}
+								<div className="relative">
+									<div className="w-16 h-16 rounded-full bg-gradient-void flex items-center justify-center text-2xl font-bold shadow-mystic border-2 border-imperial animate-pulse-glow">
+										{playerStats.cultivation_tier || 1}
+									</div>
+									<div className="absolute -inset-1 bg-gradient-gold rounded-full opacity-20 blur-md -z-10"></div>
 								</div>
-								{/* [SPRINT 5] Character Sheet Button */}
+								{/* Action Buttons */}
 								<button
 									onClick={() => setShowCharacterSheet(true)}
-									className="btn-celestial px-5 py-2.5 font-display text-sm"
+									className="btn-gold"
 								>
-									<span className="flex items-center gap-2">
-										<span>📜</span>
-										<span>Ficha</span>
-									</span>
+									📜 Ficha
 								</button>
-								{/* [SPRINT 6] Quest Log Button */}
 								<button
 									onClick={() => setShowQuestLog(true)}
-									className="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 rounded-xl font-display text-sm text-white font-semibold transition-all shadow-glow-gold border border-amber-400/30"
+									className="btn-action"
 								>
-									<span className="flex items-center gap-2">
-										<span>🎯</span>
-										<span>Missões</span>
-									</span>
+									🎯 Missões
 								</button>
 							</div>
 						)}
 					</div>
 				</div>
 
-				{/* Main Layout */}
-				<div className="flex-1 grid grid-cols-12 gap-4 px-4 pb-4 overflow-hidden">
-					{/* Sidebar Esquerda - PlayerHUD Component */}
-					<div className="col-span-2 overflow-y-auto custom-scrollbar">
+				{/* === MAIN GAME AREA (3-Column Grid) === */}
+				<div className="flex-1 grid grid-cols-12 gap-6 px-6 pb-6 overflow-hidden">
+					
+					{/* === LEFT SIDEBAR (Player HUD) === */}
+					<div className="col-span-3 overflow-y-auto scrollbar-xianxia space-y-4">
 						<PlayerHUD playerStats={playerStats} />
-								{/* HP */}
-								<div className="mystic-glass p-4 rounded-xl border border-red-500/30">
-									<div className="flex justify-between text-xs mb-2 font-semibold text-white/90">
-										<span className="flex items-center gap-1">
-											<span className="text-red-400">❤️</span>
-											<span className="font-mono">HP</span>
-										</span>
-										<span className="font-mono text-red-300">{Math.round(playerStats.current_hp)}/{Math.round(playerStats.max_hp)}</span>
-									</div>
-									<div className="h-2.5 bg-black/40 rounded-full overflow-hidden border border-red-900/50">
-										<div 
-											className="h-full bg-gradient-to-r from-red-600 via-red-500 to-pink-500 transition-all duration-300 shadow-glow-purple"
-											style={{ width: `${getEnergyPercentage(playerStats.current_hp, playerStats.max_hp)}%` }}
-										/>
-									</div>
-								</div>
 
-								{/* Energias da Tríade */}
-								<div className="mystic-glass p-4 rounded-xl border border-purple-500/30">
-									<h3 className="font-title text-sm text-celestial-gold mb-3 uppercase tracking-wider">Tríade Energética</h3>
-									<div className="space-y-3">
-										<div>
-											<div className="flex justify-between text-xs mb-1.5">
-												<span className="text-orange-300 font-body">💎 Quintessência</span>
-												<span className="font-mono text-orange-200">{Math.round(playerStats.quintessential_essence)}</span>
-											</div>
-											<div className="h-2 bg-black/40 rounded-full overflow-hidden border border-orange-900/50">
-												<div 
-													className="h-full bg-gradient-to-r from-orange-600 to-yellow-500 transition-all duration-300"
-													style={{ width: `${getEnergyPercentage(playerStats.quintessential_essence, playerStats.max_quintessential_essence || 100)}%` }}
-												/>
-											</div>
-										</div>
-										<div>
-											<div className="flex justify-between text-xs mb-1.5">
-												<span className="text-purple-300 font-body">🌙 Shadow Chi</span>
-												<span className="font-mono text-purple-200">{Math.round(playerStats.shadow_chi)}</span>
-											</div>
-											<div className="h-2 bg-black/40 rounded-full overflow-hidden border border-purple-900/50">
-												<div 
-													className="h-full bg-gradient-to-r from-purple-600 to-violet-500 transition-all duration-300 shadow-glow-purple"
-													style={{ width: `${getEnergyPercentage(playerStats.shadow_chi, playerStats.max_shadow_chi || 100)}%` }}
-												/>
-											</div>
-										</div>
-										<div>
-											<div className="flex justify-between text-xs mb-1.5">
-												<span className="text-blue-300 font-body">⚡ Yuan Qi</span>
-												<span className="font-mono text-blue-200">{Math.round(playerStats.yuan_qi)}</span>
-											</div>
-											<div className="h-2 bg-black/40 rounded-full overflow-hidden border border-blue-900/50">
-												<div 
-													className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-300"
-													style={{ width: `${getEnergyPercentage(playerStats.yuan_qi, playerStats.max_yuan_qi || 100)}%` }}
-												/>
-											</div>
-										</div>
-									</div>
-								</div>
-
-								{/* Stats */}
-								<div className="mystic-glass p-4 rounded-xl border border-amber-500/30">
-									<h3 className="font-title text-sm text-celestial-gold mb-3 uppercase tracking-wider">Atributos</h3>
-									<div className="grid grid-cols-2 gap-3 text-center">
-										<div className="bg-black/30 rounded-lg p-2 border border-blue-500/20">
-											<div className="font-mono text-lg font-bold text-blue-300">{playerStats.rank || 1}</div>
-											<div className="font-body text-xs text-white/60">Rank</div>
-										</div>
-										<div className="bg-black/30 rounded-lg p-2 border border-green-500/20">
-											<div className="font-mono text-lg font-bold text-green-300">{Math.round(playerStats.xp || 0)}</div>
-											<div className="font-body text-xs text-white/60">XP</div>
-										</div>
-										<div className="bg-black/30 rounded-lg p-2 border border-red-500/20">
-											<div className="font-mono text-lg font-bold text-red-300">{Math.round(playerStats.corruption || 0)}%</div>
-											<div className="font-body text-xs text-white/60">Corrupção</div>
-										</div>
-										<div className="bg-black/30 rounded-lg p-2 border border-purple-500/20">
-											<div className="font-mono text-lg font-bold text-purple-300">{Math.round(playerStats.willpower || 50)}</div>
-											<div className="font-body text-xs text-white/60">Vontade</div>
-										</div>
-									</div>
-								</div>
-
-						{/* NPCs */}
+						{/* === NPC CARDS (AAA Style with Glow on Hover) === */}
 						{npcsInScene.length > 0 && (
-							<div className="mystic-glass p-4 rounded-xl border border-indigo-500/30 mt-4">
-								<h3 className="font-title text-sm text-celestial-gold mb-3 uppercase tracking-wider">Personagens</h3>
-								<div className="space-y-2">
+							<div className="glass-jade p-5 rounded-2xl">
+								<h3 className="font-title text-base text-jade-glow mb-4 uppercase tracking-wider flex items-center gap-2">
+									<span>👥</span> Personagens
+								</h3>
+								<div className="space-y-3">
 									{npcsInScene.map((npc) => (
 										<div
 											key={npc.id}
 											onClick={() => setSelectedNpc(npc)}
-											className={`p-3 rounded-lg cursor-pointer transition-all hover:scale-105 border ${
-												npc.emotional_state === 'hostile' 
-													? 'bg-red-900/30 hover:bg-red-800/40 border-red-500/50 shadow-glow-purple' 
+											className={`
+												p-4 rounded-xl cursor-pointer 
+												transition-all duration-300 
+												hover:scale-105 hover:shadow-mystic
+												border-2 relative overflow-hidden
+												${npc.emotional_state === 'hostile' 
+													? 'glass-demon animate-pulse-glow' 
 													: npc.emotional_state === 'friendly' 
-													? 'bg-green-900/30 hover:bg-green-800/40 border-green-500/50' 
-													: 'bg-white/5 hover:bg-white/10 border-white/10'
-											}`}
+													? 'glass-jade' 
+													: 'glass-panel border-mist-border'
+												}
+											`}
 										>
-											<div className="font-display text-sm font-semibold text-white">{npc.name}</div>
-											<div className="font-mono text-xs text-white/60 mt-1">
-												Tier {npc.cultivation_tier || 1} • {Math.round(npc.current_hp)} HP
+											{/* Hostile Indicator Animation */}
+											{npc.emotional_state === 'hostile' && (
+												<div className="absolute -top-1 -right-1 w-3 h-3 bg-demon rounded-full animate-ping"></div>
+											)}
+											<div className="font-display text-base font-bold text-white drop-shadow-lg">{npc.name}</div>
+											<div className="font-mono text-sm text-slate-300 mt-2 flex items-center gap-3">
+												<span className="text-imperial">⚡ Tier {npc.cultivation_tier || 1}</span>
+												<span className="text-red-400">❤️ {Math.round(npc.current_hp)}</span>
 											</div>
 										</div>
 									))}
@@ -289,101 +218,164 @@ export default function GamePage() {
 						)}
 					</div>
 
-					{/* Chat Principal - PAINEL CENTRAL */}
-					<div className="col-span-7 flex flex-col mystic-glass rounded-2xl overflow-hidden border border-purple-500/30">
-						{/* Area de Mensagens */}
-						<div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+					{/* === CENTER PANEL (Narrative Chat - Storytelling Focus) === */}
+					<div className="col-span-6 flex flex-col glass-panel rounded-2xl overflow-hidden border-2 border-void-200/30 relative">
+						{/* Decorative Top Border */}
+						<div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold opacity-40"></div>
+
+						{/* === MESSAGE AREA (Scrollable Narrative Log) === */}
+						<div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-xianxia">
 							{messages.map((msg, idx) => (
 								<div
 									key={idx}
-									className={`animate-fade-in ${
-										msg.type === 'player' ? 'ml-auto max-w-md bg-gradient-to-br from-violet-900/40 to-indigo-900/40 backdrop-blur-sm p-4 rounded-xl border border-violet-500/30' : 
-										msg.type === 'narrator' ? 'bg-black/30 backdrop-blur-sm p-5 rounded-xl border border-amber-500/20' : 
-										msg.type === 'action' ? 'bg-blue-900/30 backdrop-blur-sm p-4 rounded-xl border border-blue-500/30' : 
-										msg.type === 'error' ? 'bg-red-900/30 backdrop-blur-sm p-4 rounded-xl border border-red-500/50' : 
-										'bg-purple-900/20 backdrop-blur-sm p-4 rounded-xl border border-purple-500/20'
-									}`}
+									className={`
+										${msg.type === 'player' 
+											? 'ml-auto max-w-2xl glass-panel p-5 rounded-2xl border-l-4 border-imperial' 
+											: msg.type === 'narrator' 
+											? 'glass-gold p-6 rounded-2xl border-ornate-gold' 
+											: msg.type === 'action' 
+											? 'glass-jade p-5 rounded-2xl border-l-4 border-jade' 
+											: msg.type === 'error' 
+											? 'glass-demon p-5 rounded-2xl border-l-4 border-demon' 
+											: 'glass-panel p-5 rounded-2xl border-mist-border'
+										}
+										transition-all duration-300 hover:scale-[1.01]
+									`}
 								>
 									{msg.type === 'narrator' ? (
 										<div className="prose prose-invert max-w-none">
 											{msg.text.split('\n\n').map((paragraph, pIdx) => (
-												<p key={pIdx} className="mb-4 leading-relaxed text-base font-body text-white/90 first-letter:text-2xl first-letter:text-celestial-gold first-letter:font-display first-letter:mr-1">
+												<p 
+													key={pIdx} 
+													className="
+														mb-4 leading-relaxed text-lg font-body text-slate-100
+														first-letter:text-4xl first-letter:text-gold-glow 
+														first-letter:font-title first-letter:float-left 
+														first-letter:mr-2 first-letter:leading-none
+													"
+												>
 													{paragraph}
 												</p>
 											))}
 										</div>
 									) : (
-										<div className="text-base leading-relaxed font-body text-white/85">{msg.text}</div>
+										<div className="text-lg leading-relaxed font-body text-slate-200">
+											{msg.text}
+										</div>
 									)}
 								</div>
 							))}
 							{isLoading && (
-								<div className="flex items-center gap-3 text-celestial-jade font-body">
-									<div className="spinner border-celestial-jade"></div>
-									<span>Processando<span className="loading-dots"></span></span>
+								<div className="flex items-center gap-4 text-jade font-body text-lg glass-panel p-4 rounded-xl w-fit">
+									<div className="w-6 h-6 border-4 border-jade/20 border-t-jade rounded-full animate-spin"></div>
+									<span className="text-jade-glow">A história se desenrola...</span>
 								</div>
 							)}
 							<div ref={messagesEndRef} />
 						</div>
 
-						{/* DialogueInput Component */}
+						{/* === INPUT AREA (Epic Text Input) === */}
 						<DialogueInput onSend={handleSend} isLoading={isLoading} />
 					</div>
 
-					{/* Sidebar Direita - CombatInterface Component */}
-					<div className="col-span-3 space-y-4 overflow-y-auto custom-scrollbar">
+					{/* === RIGHT SIDEBAR (Combat Skills & Actions) === */}
+					<div className="col-span-3 space-y-4 overflow-y-auto scrollbar-xianxia">
+						
+						{/* === COMBAT SKILLS (Epic Button Grid) === */}
 						<CombatInterface 
 							skills={playerSkills} 
 							onSkillClick={handleAttack}
 							isLoading={isLoading}
 						/>
 
-						{/* Quick Actions */}
-						<div className="mystic-glass p-5 rounded-2xl border border-indigo-500/30">
-							<h3 className="font-title text-sm text-celestial-gold mb-4 uppercase tracking-wider">Ações Rápidas</h3>
-							<div className="space-y-2">
+						{/* === QUICK ACTIONS (Contextual Buttons) === */}
+						<div className="glass-panel p-5 rounded-2xl border border-imperial/20 relative overflow-hidden">
+							<div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-50"></div>
+							<h3 className="font-title text-base text-gold-glow mb-4 uppercase tracking-wider flex items-center gap-2">
+								⚡ Ações Rápidas
+							</h3>
+							<div className="space-y-3">
 								<button
 									onClick={() => handleSend('olhar ao redor')}
 									disabled={isLoading}
-									className="w-full px-4 py-3 bg-gradient-to-r from-slate-800/60 to-slate-700/60 hover:from-slate-700/80 hover:to-slate-600/80 border border-white/10 hover:border-white/20 rounded-lg text-sm font-body transition-all disabled:opacity-50 flex items-center gap-2"
+									className="
+										w-full px-5 py-4 
+										bg-gradient-void hover:bg-gradient-to-r hover:from-void-200 hover:to-void-100
+										border border-mist-border hover:border-mist-glow
+										rounded-xl text-base font-body text-slate-200
+										transition-all duration-300 hover:scale-105 hover:shadow-mystic
+										disabled:opacity-40 disabled:cursor-not-allowed
+										flex items-center gap-3
+									"
 								>
-									<span className="text-lg">👁️</span>
-									<span>Observar Entorno</span>
+									<span className="text-2xl">👁️</span>
+									<span className="font-semibold">Observar Entorno</span>
 								</button>
 								<button
 									onClick={() => handleSend('meditar e cultivar')}
 									disabled={isLoading}
-									className="w-full px-4 py-3 bg-gradient-to-r from-purple-900/40 to-violet-900/40 hover:from-purple-800/60 hover:to-violet-800/60 border border-purple-500/20 hover:border-purple-400/40 rounded-lg text-sm font-body transition-all disabled:opacity-50 flex items-center gap-2"
+									className="
+										w-full px-5 py-4 
+										bg-gradient-to-r from-purple-900/50 to-violet-900/50 
+										hover:from-purple-800 hover:to-violet-800
+										border border-purple-500/30 hover:border-purple-400
+										rounded-xl text-base font-body text-slate-200
+										transition-all duration-300 hover:scale-105 hover:shadow-glow-purple
+										disabled:opacity-40 disabled:cursor-not-allowed
+										flex items-center gap-3
+									"
 								>
-									<span className="text-lg">🧘</span>
-									<span>Meditar e Cultivar</span>
+									<span className="text-2xl">🧘</span>
+									<span className="font-semibold">Meditar</span>
 								</button>
 								<button
 									onClick={() => handleSend('procurar por recursos')}
 									disabled={isLoading}
-									className="w-full px-4 py-3 bg-gradient-to-r from-green-900/40 to-emerald-900/40 hover:from-green-800/60 hover:to-emerald-800/60 border border-green-500/20 hover:border-green-400/40 rounded-lg text-sm font-body transition-all disabled:opacity-50 flex items-center gap-2"
+									className="
+										w-full px-5 py-4 
+										bg-gradient-jade hover:shadow-glow-jade
+										border border-jade/30 hover:border-jade
+										rounded-xl text-base font-body text-void font-bold
+										transition-all duration-300 hover:scale-105
+										disabled:opacity-40 disabled:cursor-not-allowed
+										flex items-center gap-3
+									"
 								>
-									<span className="text-lg">🔍</span>
-									<span>Procurar Recursos</span>
+									<span className="text-2xl">🔍</span>
+									<span>Buscar Recursos</span>
 								</button>
 								<button
 									onClick={() => handleSend('descansar e recuperar energia')}
 									disabled={isLoading}
-									className="w-full px-4 py-3 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 hover:from-blue-800/60 hover:to-cyan-800/60 border border-blue-500/20 hover:border-blue-400/40 rounded-lg text-sm font-body transition-all disabled:opacity-50 flex items-center gap-2"
+									className="
+										w-full px-5 py-4 
+										bg-gradient-to-r from-cyan-900/50 to-blue-900/50 
+										hover:from-cyan-800 hover:to-blue-800
+										border border-cyan-500/30 hover:border-cyan-400
+										rounded-xl text-base font-body text-slate-200
+										transition-all duration-300 hover:scale-105
+										disabled:opacity-40 disabled:cursor-not-allowed
+										flex items-center gap-3
+									"
 								>
-									<span className="text-lg">💤</span>
-									<span>Descansar</span>
+									<span className="text-2xl">💤</span>
+									<span className="font-semibold">Descansar</span>
 								</button>
 							</div>
 						</div>
 
-						{/* Combate Status */}
+						{/* === COMBAT STATUS (Warning Indicator) === */}
 						{inCombat && (
-							<div className="mystic-glass-gold p-5 rounded-2xl border-2 border-red-500/70 animate-pulse-border shadow-glow-purple">
-								<div className="text-center">
-									<div className="text-4xl mb-3 animate-bounce">⚔️</div>
-									<div className="font-title text-base font-bold text-red-300 tracking-wider">EM COMBATE!</div>
-									<div className="font-body text-xs text-white/70 mt-2">Selecione uma técnica para atacar</div>
+							<div className="glass-demon p-6 rounded-2xl border-2 border-demon animate-pulse-glow relative overflow-hidden">
+								<div className="absolute inset-0 bg-gradient-demon opacity-10 animate-pulse"></div>
+								<div className="text-center relative z-10">
+									<div className="text-5xl mb-4 animate-bounce drop-shadow-lg">⚔️</div>
+									<div className="font-title text-xl font-bold text-demon-100 tracking-wider uppercase">
+										Batalha!
+									</div>
+									<div className="font-body text-sm text-slate-300 mt-3">
+										Escolha uma técnica para atacar
+									</div>
 								</div>
 							</div>
 						)}
