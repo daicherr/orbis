@@ -51,7 +51,7 @@ class WorldSimulator:
             event = self.world_events.pop(0)
             rumor = self.gossip_monger.generate_rumor(event)
             self.gossip_monger.spread_rumor(rumor, npcs)
-            print(f"SIM: Rumor espalhado - {rumor['content']}")
+            print(f"SIM: Rumor espalhado - {rumor}")
         
         # Diplomat: Avalia relações de facções (placeholder por enquanto)
         # factions = await load_factions_from_db()

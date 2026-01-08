@@ -183,7 +183,7 @@ class Profiler:
             current_location=victim.current_location  # Aparece no mesmo local
         )
         
-        print(f"⚔️ NEMESIS SPAWNED: {avenger_name} (Rank {avenger_rank}) busca vingança por {victim.name}!")
+        print(f"[NEMESIS] SPAWNED: {avenger_name} (Rank {avenger_rank}) busca vinganca por {victim.name}!")
         
         return avenger
 

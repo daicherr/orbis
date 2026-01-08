@@ -6,7 +6,6 @@ export default function WorldClock({ className = '' }) {
 
   useEffect(() => {
     fetchWorldTime();
-    // Poll every 30 seconds to keep time updated
     const interval = setInterval(fetchWorldTime, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -25,7 +24,7 @@ export default function WorldClock({ className = '' }) {
 
   if (loading || !worldTime) {
     return (
-      <div className={`text-sm text-secondary ${className}`}>
+      <div className={`panel ${className}`} style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
         Carregando tempo...
       </div>
     );
@@ -33,49 +32,36 @@ export default function WorldClock({ className = '' }) {
 
   const { day, month, year, hour, minute, time_of_day, season } = worldTime;
   
-  // Time of day icon
   const timeIcon = {
-    'dawn': '🌅',
-    'morning': '☀️',
-    'noon': '🌞',
-    'afternoon': '🌤️',
-    'dusk': '🌇',
-    'evening': '🌆',
-    'night': '🌙',
-    'midnight': '🌑'
+    'dawn': '🌅', 'morning': '☀️', 'noon': '🌞', 'afternoon': '🌤️',
+    'dusk': '🌇', 'evening': '🌆', 'night': '🌙', 'midnight': '🌑'
   }[time_of_day] || '⏰';
 
-  // Season icon
   const seasonIcon = {
-    'Spring': '🌸',
-    'Summer': '☀️',
-    'Autumn': '🍂',
-    'Winter': '❄️'
+    'Spring': '🌸', 'Summer': '☀️', 'Autumn': '🍂', 'Winter': '❄️'
   }[season] || '🌍';
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-md ${className}`}>
       {/* Time */}
-      <div className="flex items-center gap-1 bg-black/30 px-3 py-1.5 rounded-lg">
-        <span className="text-xl">{timeIcon}</span>
-        <span className="text-sm font-medium text-gold">
+      <div className="panel flex items-center gap-sm" style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}>
+        <span style={{ fontSize: '1.25rem' }}>{timeIcon}</span>
+        <span className="glow-gold" style={{ fontSize: '0.875rem', fontWeight: '500' }}>
           {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
         </span>
       </div>
 
       {/* Date */}
-      <div className="flex items-center gap-1 bg-black/30 px-3 py-1.5 rounded-lg">
-        <span className="text-xl">{seasonIcon}</span>
-        <span className="text-sm text-secondary">
+      <div className="panel flex items-center gap-sm" style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}>
+        <span style={{ fontSize: '1.25rem' }}>{seasonIcon}</span>
+        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
           {day}/{month}/{year}
         </span>
       </div>
 
       {/* Period Name */}
-      <div className="bg-black/20 px-3 py-1.5 rounded-lg">
-        <span className="text-xs uppercase tracking-wider text-gold/70">
-          {time_of_day}
-        </span>
+      <div className="badge badge-gold" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {time_of_day}
       </div>
     </div>
   );

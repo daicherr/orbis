@@ -13,6 +13,12 @@ class Player(SQLModel, table=True):
     origin_location: str = Field(default="Floresta Nublada")  # Local de origem
     backstory: Optional[str] = Field(default=None)  # História gerada pelo Session Zero
     
+    # Casa e Contexto Inicial (NOVO)
+    home_location: Optional[str] = Field(default=None)  # "casa" aponta para cá
+    home_location_id: Optional[int] = Field(default=None)  # FK para DynamicLocation se criado
+    first_scene_context: Optional[str] = Field(default=None)  # "Onde sua jornada começa?"
+    important_npc_name: Optional[str] = Field(default=None)  # NPC importante definido no Session Zero
+    
     # Sistema de Cultivation (GDD)
     cultivation_tier: int = Field(default=1)  # 1-9 tiers do GDD
     can_fly: bool = Field(default=False)  # Desbloqueado no Tier 3+
@@ -40,6 +46,9 @@ class Player(SQLModel, table=True):
     
     constitution: str = Field(default="Mortal Body")
     
+    # Economia
+    gold: int = Field(default=100)  # Moeda principal
+    
     # Localização e navegação
     current_location: str = Field(default="Início da Jornada")
     
@@ -50,3 +59,7 @@ class Player(SQLModel, table=True):
     inventory: List[dict] = Field(default=[], sa_column=Column(JSON)) # Ex: [{"item_id": "spirit_stone", "quantity": 10}]
     status_effects: List[dict] = Field(default=[], sa_column=Column(JSON)) # Ex: [{"type": "dot", "turns_left": 2}]
     learned_skills: List[str] = Field(default=["silent_strike"], sa_column=Column(JSON))  # Skills desbloqueadas
+    
+    # Estatísticas de combate
+    kill_count: int = Field(default=0)  # Número de mortes causadas pelo jogador
+    kill_history: List[dict] = Field(default=[], sa_column=Column(JSON))  # Histórico de mortes [{victim_name, victim_rank, location}]

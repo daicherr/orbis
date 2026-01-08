@@ -29,6 +29,17 @@ export const GameProvider = ({ children }) => {
     setIsLoading(false);
   }, []);
 
+  // Recarregar do localStorage (útil após criar personagem)
+  const refreshFromStorage = () => {
+    const storedId = window.localStorage.getItem('playerId');
+    const storedName = window.localStorage.getItem('playerName');
+    
+    if (storedId && storedName) {
+      setPlayerId(Number(storedId));
+      setPlayerName(storedName);
+    }
+  };
+
   // Criar novo jogador
   const createPlayer = async (playerData) => {
     try {
@@ -59,11 +70,12 @@ export const GameProvider = ({ children }) => {
   };
 
   // Carregar dados do jogador
-  const loadPlayer = async (id = playerId) => {
-    if (!id) return null;
+  const loadPlayer = async (id = null) => {
+    const currentId = id || Number(window.localStorage.getItem('playerId')) || playerId;
+    if (!currentId) return null;
 
     try {
-      const response = await fetch(`${API_URL}/player/${id}`);
+      const response = await fetch(`${API_URL}/player/${currentId}`);
       if (!response.ok) throw new Error('Jogador não encontrado');
       return await response.json();
     } catch (error) {
@@ -73,13 +85,20 @@ export const GameProvider = ({ children }) => {
   };
 
   // Enviar ação do jogador
-  const sendAction = async (action, id = playerId) => {
-    if (!id) throw new Error('Player ID não definido');
+  const sendAction = async (action, id = null) => {
+    // Sempre verificar localStorage para obter o ID mais recente
+    const currentId = id || Number(window.localStorage.getItem('playerId')) || playerId;
+    if (!currentId) throw new Error('Player ID não definido');
 
     try {
       const response = await fetch(
-        `${API_URL}/game/turn?player_id=${id}&player_input=${encodeURIComponent(action)}`,
-        { method: 'POST' }
+        `${API_URL}/game/turn?player_id=${currentId}&player_input=${encodeURIComponent(action)}`,
+        { 
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
       );
 
       if (!response.ok) {
@@ -95,11 +114,12 @@ export const GameProvider = ({ children }) => {
   };
 
   // Buscar inventário do jogador
-  const loadInventory = async (id = playerId) => {
-    if (!id) return [];
+  const loadInventory = async (id = null) => {
+    const currentId = id || Number(window.localStorage.getItem('playerId')) || playerId;
+    if (!currentId) return [];
 
     try {
-      const response = await fetch(`${API_URL}/player/${id}/inventory`);
+      const response = await fetch(`${API_URL}/player/${currentId}/inventory`);
       if (!response.ok) return [];
       return await response.json();
     } catch (error) {
@@ -127,6 +147,7 @@ export const GameProvider = ({ children }) => {
     sendAction,
     loadInventory,
     logout,
+    refreshFromStorage,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

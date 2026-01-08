@@ -1,7 +1,7 @@
 from google import genai
 from app.config import settings
 import json
-from typing import Literal
+from typing import Literal, AsyncIterator
 
 
 GeminiTask = Literal["story", "combat", "fast", "default"]
@@ -79,6 +79,94 @@ class GeminiClient:
             if task == "story":
                 return "(IA instável) O mundo ao seu redor parece distorcido por um instante, mas você segue adiante." 
             return "(IA instável)"
+
+    async def generate_content_async(
+        self, 
+        prompt: str, 
+        *, 
+        model_type: str = "default",
+        model: str | None = None
+    ) -> str:
+        """
+        Versão assíncrona de generate_text.
+        Usada pelos agentes que precisam de async/await.
+        
+        Args:
+            prompt: O texto do prompt
+            model_type: "flash" para rápido, "story" para narrativa, "default" para padrão
+            model: Nome específico do modelo (opcional)
+        """
+        import asyncio
+        
+        # Mapear model_type para task
+        task_map = {
+            "flash": "fast",
+            "fast": "fast",
+            "story": "story",
+            "combat": "combat",
+            "default": "default"
+        }
+        task = task_map.get(model_type, "default")
+        
+        # Executar em thread pool para não bloquear o event loop
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,  # Usa o executor padrão
+            lambda: self.generate_text(prompt, model=model, task=task)
+        )
+        return result
+
+    async def generate_text_stream(
+        self, 
+        prompt: str, 
+        *, 
+        model_type: str = "default",
+        model: str | None = None
+    ) -> AsyncIterator[str]:
+        """
+        Versão com streaming de generate_text.
+        Retorna chunks de texto conforme são gerados pela IA.
+        
+        Sprint 13: Response Streaming via SSE
+        """
+        # Mapear model_type para task
+        task_map = {
+            "flash": "fast",
+            "fast": "fast",
+            "story": "story",
+            "combat": "combat",
+            "default": "default"
+        }
+        task = task_map.get(model_type, "default")
+        resolved_model = self._resolve_model(model=model, task=task)
+        
+        if self.client is None:
+            # Modo offline - retorna mensagem única
+            if task == "story":
+                yield "(AI desativada) Você observa o ambiente, o vento corta as árvores e a floresta parece prender a respiração."
+            else:
+                yield "(AI desativada)"
+            return
+        
+        try:
+            # Usa streaming do SDK google-genai
+            response = self.client.models.generate_content_stream(
+                model=resolved_model,
+                contents=prompt,
+            )
+            
+            for chunk in response:
+                if hasattr(chunk, 'text') and chunk.text:
+                    yield chunk.text
+                    
+        except Exception as e:
+            msg = str(e)
+            print(f"Streaming error: {e}")
+            if "API_KEY_INVALID" in msg or "API key not valid" in msg:
+                self.client = None
+                yield "(AI indisponível)"
+            else:
+                yield "(IA instável) O mundo parece distorcido por um instante..."
 
     def generate_json(self, prompt: str, *, model: str | None = None, task: GeminiTask | None = None) -> dict:
         """Gera uma resposta em formato JSON; tenta parsear o texto retornado."""

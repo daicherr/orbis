@@ -56,7 +56,7 @@ class GossipMonger:
         """
         
         self.event_queue.append(event)
-        print(f"📰 GossipMonger: Novo evento registrado - {event['type']} em {event.get('location', 'Unknown')}")
+        print(f"[GOSSIP] GossipMonger: Novo evento registrado - {event['type']} em {event.get('location', 'Unknown')}")
     
     async def process_events(self) -> List[str]:
         """

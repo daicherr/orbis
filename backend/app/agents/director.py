@@ -3,6 +3,7 @@ from app.agents.narrator import Narrator
 from app.agents.referee import Referee
 from app.core.combat_engine import CombatEngine
 from app.core.loot_manager import loot_manager
+from app.core.npc_population import npc_population_manager
 from app.database.repositories.player_repo import PlayerRepository
 from app.database.repositories.npc_repo import NpcRepository
 from app.database.repositories.gamelog_repo import GameLogRepository
@@ -48,105 +49,156 @@ class Director:
         memory_content = f"[{event_type}] {details}"
         try:
             await self.memory_repo.add_memory(npc_id, memory_content, embedding_dim=128)
-            print(f"💾 Memória salva para NPC {npc_id}: {memory_content[:50]}...")
+            print(f"[MEMORY] Salva para NPC {npc_id}: {memory_content[:50]}...")
         except Exception as e:
-            print(f"⚠️ Erro ao salvar memória: {e}")
+            print(f"[WARN] Erro ao salvar memoria: {e}")
     
     def _determine_location_type(self, location: str) -> str:
         """Determina o tipo de localização baseado no nome"""
-        location_lower = location.lower()
-        if any(word in location_lower for word in ["vila", "cidade", "town", "village", "forja", "mercado"]):
-            return "settlement"
-        elif any(word in location_lower for word in ["floresta", "forest", "selva", "jungle"]):
-            return "wilderness"
-        elif any(word in location_lower for word in ["caverna", "cave", "dungeon", "ruínas"]):
-            return "dungeon"
-        elif any(word in location_lower for word in ["templo", "mosteiro", "temple", "monastery"]):
-            return "sacred"
-        else:
-            return "wilderness"
+        profile = npc_population_manager.get_location_profile(location)
+        return profile.location_type
     
     async def _spawn_npc_if_needed(self, player: Player, location: str, npcs_in_scene: list):
         """
-        Spawna NPCs baseado no tipo de localização
-        - Settlements: NPCs amigáveis (merchants, elders)
-        - Wilderness: Inimigos hostis
-        - Sacred: NPCs neutros (monks, guardians)
+        Spawna NPCs dinamicamente baseado no perfil da localização.
+        
+        Sprint 11: Usa o NPCPopulationManager para densidade contextual:
+        - Cidades: 3-5 NPCs, maioria amigável
+        - Wilderness: 0-2 NPCs, maioria hostil
+        - Estabelecimentos: 1-4 NPCs específicos do tipo (taverna, loja, etc)
         """
-        if npcs_in_scene:
-            return None  # Já tem NPCs na cena
+        import random
         
-        location_type = self._determine_location_type(location)
-        print(f"Cena vazia. Tipo de localização: {location_type}")
+        # Obter hora do dia para ajustar densidade
+        time_of_day = world_clock.get_time_of_day()
         
-        if location_type == "settlement":
-            # Spawn friendly NPC
-            roles = ["merchant", "elder", "quest_giver", "healer", "blacksmith"]
-            import random
-            role = random.choice(roles)
-            
-            npc_data = self.architect.generate_friendly_npc(location, role)
-            if "error" not in npc_data:
-                new_npc = NPC(
-                    name=npc_data["name"],
-                    rank=npc_data["stats"]["rank"],
-                    current_hp=npc_data["stats"]["hp"],
-                    max_hp=npc_data["stats"]["hp"],
-                    defense=npc_data["stats"]["defense"],
-                    personality_traits=npc_data.get("personality", ["friendly"]),
-                    emotional_state="friendly",
-                    current_location=location
-                )
-                created_npc = await self.npc_repo.create(new_npc)
-                npcs_in_scene.append(created_npc)
-                return f"Você encontra {created_npc.name}, que acena em sua direção com um sorriso acolhedor."
+        # Calcular quantos NPCs spawnar
+        spawn_count, spawn_roles = npc_population_manager.calculate_spawn_count(
+            location=location,
+            current_npcs=len(npcs_in_scene),
+            time_of_day=time_of_day
+        )
         
-        elif location_type == "sacred":
-            # Spawn neutral NPC
-            occupations = ["monk", "guardian", "scholar", "hermit"]
-            import random
-            occupation = random.choice(occupations)
-            
-            npc_data = self.architect.generate_neutral_npc(location, occupation)
-            if "error" not in npc_data:
-                new_npc = NPC(
-                    name=npc_data["name"],
-                    rank=npc_data["stats"]["rank"],
-                    current_hp=npc_data["stats"]["hp"],
-                    max_hp=npc_data["stats"]["hp"],
-                    defense=npc_data["stats"]["defense"],
-                    personality_traits=npc_data.get("personality", ["cautious"]),
-                    emotional_state="neutral",
-                    current_location=location
-                )
-                created_npc = await self.npc_repo.create(new_npc)
-                npcs_in_scene.append(created_npc)
-                return f"{created_npc.name} observa você com olhos atentos, avaliando suas intenções."
+        if spawn_count == 0:
+            return None
         
-        else:
-            # Spawn enemy (wilderness/dungeon)
-            new_enemy_data = self.architect.generate_enemy(tier=player.rank, biome=location_type)
-            
-            if "error" not in new_enemy_data:
-                new_npc = NPC(
-                    name=new_enemy_data["name"],
-                    rank=new_enemy_data["stats"]["rank"],
-                    current_hp=new_enemy_data["stats"]["hp"],
-                    max_hp=new_enemy_data["stats"]["hp"],
-                    defense=new_enemy_data["stats"]["defense"],
-                    personality_traits=["hostile", "territorial"],
-                    emotional_state="hostile",
-                    current_location=location
-                )
-                created_npc = await self.npc_repo.create(new_npc)
-                npcs_in_scene.append(created_npc)
-                return f"Das sombras, um {created_npc.name} surge, rosnando ameaçadoramente!"
+        print(f"[NPC POPULATION] {location}: Spawnando {spawn_count} NPCs. Hora: {time_of_day}")
         
+        spawn_messages = []
+        
+        for disposition, role in spawn_roles:
+            try:
+                if disposition == "hostile":
+                    # Gerar inimigo
+                    profile = npc_population_manager.get_location_profile(location)
+                    new_enemy_data = self.architect.generate_enemy(
+                        tier=player.rank, 
+                        biome=profile.location_type
+                    )
+                    
+                    if "error" not in new_enemy_data:
+                        new_npc = NPC(
+                            name=new_enemy_data["name"],
+                            rank=new_enemy_data["stats"]["rank"],
+                            current_hp=new_enemy_data["stats"]["hp"],
+                            max_hp=new_enemy_data["stats"]["hp"],
+                            defense=new_enemy_data["stats"]["defense"],
+                            personality_traits=["hostile", role],
+                            emotional_state="hostile",
+                            current_location=location
+                        )
+                        created_npc = await self.npc_repo.create(new_npc)
+                        npcs_in_scene.append(created_npc)
+                        spawn_messages.append(f"Um {created_npc.name} surge das sombras!")
+                
+                elif disposition == "friendly":
+                    # Gerar NPC amigável
+                    npc_data = self.architect.generate_friendly_npc(location, role)
+                    
+                    if "error" not in npc_data:
+                        new_npc = NPC(
+                            name=npc_data["name"],
+                            rank=npc_data["stats"]["rank"],
+                            current_hp=npc_data["stats"]["hp"],
+                            max_hp=npc_data["stats"]["hp"],
+                            defense=npc_data["stats"]["defense"],
+                            personality_traits=npc_data.get("personality", ["friendly", role]),
+                            emotional_state="friendly",
+                            current_location=location
+                        )
+                        created_npc = await self.npc_repo.create(new_npc)
+                        npcs_in_scene.append(created_npc)
+                        spawn_messages.append(f"{created_npc.name} está por perto.")
+                
+                else:  # neutral
+                    npc_data = self.architect.generate_neutral_npc(location, role)
+                    
+                    if "error" not in npc_data:
+                        new_npc = NPC(
+                            name=npc_data["name"],
+                            rank=npc_data["stats"]["rank"],
+                            current_hp=npc_data["stats"]["hp"],
+                            max_hp=npc_data["stats"]["hp"],
+                            defense=npc_data["stats"]["defense"],
+                            personality_traits=npc_data.get("personality", ["cautious", role]),
+                            emotional_state="neutral",
+                            current_location=location
+                        )
+                        created_npc = await self.npc_repo.create(new_npc)
+                        npcs_in_scene.append(created_npc)
+                        spawn_messages.append(f"{created_npc.name} observa você com atenção.")
+                        
+            except Exception as e:
+                print(f"[NPC POPULATION] Erro ao spawnar NPC ({role}): {e}")
+                continue
+        
+        if spawn_messages:
+            return " ".join(spawn_messages)
         return None
 
     async def _spawn_enemy_if_needed(self, player: Player, location: str, npcs_in_scene: list):
         """DEPRECATED: Use _spawn_npc_if_needed instead"""
         return await self._spawn_npc_if_needed(player, location, npcs_in_scene)
+
+    async def _run_dawn_world_tick(self) -> dict:
+        """
+        Executa o tick automático do mundo ao amanhecer (6am).
+        Roda economia, facções e ecologia em background.
+        """
+        from app.core.simulation.daily_tick import DailyTickSimulator
+        from app.database.repositories.faction_repo import FactionRepository
+        from app.database.repositories.economy_repo import GlobalEconomyRepository
+        from app.database.repositories.world_event_repo import WorldEventRepository
+        
+        try:
+            print("🌅 [DAWN TICK] Executando simulação automática do mundo...")
+            
+            # Usa a session do npc_repo (já está no contexto)
+            session = self.npc_repo.session
+            
+            faction_repo = FactionRepository(session)
+            economy_repo = GlobalEconomyRepository(session)
+            event_repo = WorldEventRepository(session)
+            
+            daily_sim = DailyTickSimulator(
+                npc_repo=self.npc_repo,
+                faction_repo=faction_repo,
+                economy_repo=economy_repo,
+                world_event_repo=event_repo
+            )
+            
+            report = await daily_sim.run_daily_simulation(
+                current_turn=world_clock.get_current_turn()
+            )
+            
+            print(f"🌅 [DAWN TICK] Completo: {len(report.get('events', []))} eventos gerados")
+            return report
+            
+        except Exception as e:
+            print(f"⚠️ [DAWN TICK] Erro na simulação: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     async def process_player_turn(self, player_id: int, player_input: str) -> Dict[str, Any]:
         """
@@ -155,6 +207,9 @@ class Director:
         player = await self.player_repo.get_by_id(player_id)
         if not player:
             return {"error": "Player not found"}
+        
+        # CRITICAL: Força carregar todos os atributos agora (antes de qualquer lazy load)
+        await self.player_repo.session.refresh(player)
         
         turn_events = []
 
@@ -172,8 +227,15 @@ class Director:
             # Lógica para Berserk e Morte seria mais complexa
             
         # ===== CHRONOS: ADVANCE TIME =====
-        world_clock.advance_turn()
+        time_result = world_clock.advance_turn()
         current_time = world_clock.get_current_datetime()
+        current_time_str = current_time.isoformat() if hasattr(current_time, 'isoformat') else str(current_time)
+        
+        # ===== WORLD TICK AUTOMÁTICO ÀS 6AM =====
+        if time_result.get("new_dawn"):
+            dawn_report = await self._run_dawn_world_tick()
+            if dawn_report:
+                turn_events.append("🌅 O sol nasce sobre Orbis. O mundo desperta e as facções se movem...")
         
         # Localização e NPCs na cena (FILTRADOS por localização)
         current_location = player.current_location or "Floresta Assombrada"
@@ -212,7 +274,7 @@ class Director:
         action_result_message = ""
         if action.get("intent") == "attack":
             target_name = action.get("target_name")
-            skill_id = action.get("skill_name", "basic_attack")
+            skill_id = action.get("skill_name") or "basic_attack"  # Garante que None vira basic_attack
             target_npc = next((npc for npc in npcs_in_scene if npc.name == target_name), None)
             
             if target_npc:
@@ -278,7 +340,7 @@ class Director:
                             "actor": player.name,
                             "victim": target_npc.name,
                             "location": player.current_location,
-                            "cultivation_tier": target_npc.cultivation_tier
+                            "rank": target_npc.rank  # NPCs usam rank, não cultivation_tier
                         })
                     
                     npcs_in_scene.remove(target_npc)
@@ -328,6 +390,78 @@ class Director:
             else:
                 action_result_message = f"Não há ninguém chamado '{target_name}' aqui."
         
+        elif action.get("intent") == "move":
+            destination = action.get("destination") or action.get("target_name")
+            if destination:
+                # Usar LocationManager para resolver destino (inclui "casa", aliases, etc.)
+                from app.core.location_manager import LocationManager
+                
+                # Preciso da session do banco - vou obter do player_repo
+                session = self.player_repo.session
+                location_manager = LocationManager(session, self.narrator.gemini_client if hasattr(self.narrator, 'gemini_client') else None)
+                
+                location_result = await location_manager.resolve_location(destination, player.id)
+                
+                if location_result.get("found"):
+                    # Local encontrado!
+                    matched_location = location_result.get("name")
+                    
+                    # Verificar se foi destruído
+                    if location_result.get("is_destroyed"):
+                        action_result_message = f"Você viaja até {matched_location}, mas encontra apenas ruínas. O local foi destruído."
+                        player.current_location = matched_location + " (Ruínas)"
+                    else:
+                        old_location = player.current_location
+                        player.current_location = matched_location
+                        
+                        # Mensagem especial se for a casa
+                        if location_result.get("type") in ["dynamic_home", "static_home", "origin_fallback"]:
+                            action_result_message = f"Você retorna ao seu lar: {matched_location}. Um sentimento de familiaridade o envolve."
+                        else:
+                            action_result_message = f"Você viaja de {old_location} para {matched_location}."
+                else:
+                    # Local não encontrado - verificar se o Mestre deve criar
+                    should_create = await location_manager.should_create_location(
+                        player_request=destination,
+                        current_location=player.current_location,
+                        player=player
+                    )
+                    
+                    if should_create.get("should_create"):
+                        # Mestre decide criar o local!
+                        new_location = await location_manager.create_location_from_narrative(
+                            name=should_create.get("location_name", destination),
+                            description=should_create.get("description", f"Um local em {player.current_location}."),
+                            parent_location=player.current_location,
+                            location_type=should_create.get("location_type", "generic"),
+                            owner_player_id=None,
+                            context=f"Player pediu para ir a '{destination}'"
+                        )
+                        
+                        old_location = player.current_location
+                        player.current_location = new_location.name
+                        action_result_message = f"Você descobre um novo local: {new_location.name}. {new_location.description}"
+                    else:
+                        # Realmente não existe
+                        action_result_message = f"Você não conhece o caminho para '{destination}'. {should_create.get('reason', '')}"
+            else:
+                action_result_message = "Você precisa especificar um destino."
+        
+        elif action.get("intent") == "observe":
+            action_result_message = f"Você observa atentamente seus arredores em {current_location}."
+            if npcs_in_scene:
+                npc_names = [npc.name for npc in npcs_in_scene]
+                action_result_message += f" Você nota: {', '.join(npc_names)}."
+            else:
+                action_result_message += " O local parece vazio."
+        
+        elif action.get("intent") == "meditate" or action.get("intent") == "cultivate":
+            # Cultivar Qi
+            qi_gain = 10 * player.rank
+            player.yuan_qi = min(player.max_yuan_qi, player.yuan_qi + qi_gain)
+            player.shadow_chi = min(player.max_shadow_chi, player.shadow_chi + qi_gain * 0.5)
+            action_result_message = f"Você medita e recupera {qi_gain} Yuan Qi."
+        
         # ... (outras intenções)
 
         # Adiciona os eventos do início do turno à mensagem de resultado
@@ -345,7 +479,7 @@ class Director:
                 action_result=full_action_result,
                 location=current_location,
                 npcs_present=npc_ids,
-                world_time=current_time
+                world_time=current_time_str
             )
             
             # ===== WORLDSIMULATOR: Run every 10 turns =====
@@ -358,6 +492,9 @@ class Director:
                         npc_repo=self.npc_repo,
                         player_repo=self.player_repo
                     )
+        
+        # ===== SALVAR PLAYER NO BANCO (inventário, stats, etc) =====
+        await self.player_repo.update(player)
             
         return {
             "scene_description": scene_description,

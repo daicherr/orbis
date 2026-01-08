@@ -3,20 +3,34 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useGame } from '../contexts/GameContext';
 import CharacterCreationWizard from '../components/CharacterCreationWizard';
+import CharacterSelector from '../components/CharacterSelector';
 
 export default function Home() {
   const router = useRouter();
-  const { playerId, createPlayer } = useGame();
+  const { playerId } = useGame();
   const [showWizard, setShowWizard] = useState(false);
+  const [showSelector, setShowSelector] = useState(false);
 
-  const handleWizardComplete = async (playerData) => {
+  const handleWizardComplete = async (player) => {
     try {
-      const player = await createPlayer(playerData);
+      // O player já vem criado do CharacterCreationWizard
+      // Salvar no localStorage
+      window.localStorage.setItem('playerId', String(player.id));
+      window.localStorage.setItem('playerName', player.name);
+      
+      // Redirecionar para o jogo
       router.push('/game');
     } catch (error) {
-      console.error('Erro ao criar jogador:', error);
-      alert(`Erro ao criar personagem: ${error.message}`);
+      console.error('Erro ao processar jogador:', error);
+      alert(`Erro ao processar personagem: ${error.message}`);
     }
+  };
+
+  const handleSelectCharacter = (character) => {
+    // Salvar personagem selecionado
+    window.localStorage.setItem('playerId', String(character.id));
+    window.localStorage.setItem('playerName', character.name);
+    router.push('/game');
   };
 
   const handleContinue = () => {
@@ -30,65 +44,77 @@ export default function Home() {
     return <CharacterCreationWizard onComplete={handleWizardComplete} />;
   }
 
+  // Se selector está ativo, mostrar seleção
+  if (showSelector) {
+    return (
+      <CharacterSelector 
+        onSelect={handleSelectCharacter}
+        onCreateNew={() => setShowWizard(true)}
+      />
+    );
+  }
+
   return (
     <>
       <Head>
-        <title>Códice Triluna - Início da Jornada</title>
+        <title>Códice Triluna - RPG de Cultivo Imortal</title>
       </Head>
 
-      <div className="min-h-screen celestial-bg flex items-center justify-center p-4">
-        <div className="mystic-glass-gold p-10 max-w-lg w-full rounded-2xl">
-          <div className="text-center mb-10">
-            <h1 className="font-title text-6xl md:text-7xl text-celestial-gold text-mystic-glow mb-4">
-              Códice Triluna
-            </h1>
-            <p className="font-display text-xl text-white/70 italic">
+      <div className="page-wrapper">
+        <div className="card card-gold" style={{ maxWidth: '720px', width: '100%' }}>
+          <div className="text-center">
+            <h1>✦ CÓDICE TRILUNA ✦</h1>
+            <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '32px' }}>
               A Jornada do Cultivador Imortal
             </p>
-            <div className="mt-4 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
+            <div className="divider-gold"></div>
           </div>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-md mt-xl">
+            <button
+              onClick={() => setShowSelector(true)}
+              className="btn btn-primary btn-lg btn-block"
+            >
+              <span style={{ fontSize: '1.5rem' }}>⚔️</span>
+              <span>Selecionar Cultivador</span>
+            </button>
+
             <button
               onClick={() => setShowWizard(true)}
-              className="btn-celestial w-full py-4 text-lg font-semibold group"
+              className="btn btn-secondary btn-lg btn-block"
             >
-              <span className="flex items-center justify-center gap-2">
-                <span className="text-2xl group-hover:scale-110 transition-transform">✨</span>
-                <span className="font-display">Novo Cultivador</span>
-              </span>
+              <span style={{ fontSize: '1.5rem' }}>✨</span>
+              <span>Criar Novo Personagem</span>
             </button>
 
             {playerId && (
               <button
                 onClick={handleContinue}
-                className="w-full py-4 bg-gradient-to-r from-amber-600/20 to-yellow-600/20 hover:from-amber-500/30 hover:to-yellow-500/30 rounded-xl font-display text-lg transition-all duration-300 border border-amber-500/40 hover:border-amber-400 shadow-glow-gold"
+                className="btn btn-ghost btn-lg btn-block"
               >
-                <span className="flex items-center justify-center gap-2">
-                  <span className="text-2xl">📖</span>
-                  <span>Continuar Jornada</span>
-                </span>
+                <span style={{ fontSize: '1.5rem' }}>📖</span>
+                <span>Continuar Última Jornada</span>
               </button>
             )}
           </div>
 
-          <div className="mt-10 pt-8 border-t-2 border-amber-500/30">
-            <div className="font-body text-sm text-white/70 space-y-2">
-              <div className="flex items-start gap-3">
-                <span className="text-lg">🌟</span>
-                <p><span className="text-celestial-gold font-semibold">Sistema de Cultivo:</span> 9 Tiers de Transcendência</p>
+          <div className="mt-xl" style={{ paddingTop: 'var(--spacing-lg)', borderTop: '1px solid var(--border-accent)' }}>
+            <div className="flex flex-col gap-sm" style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+              <div className="flex gap-sm">
+                <span style={{ fontSize: '1.25rem' }}>🌟</span>
+                <p><strong className="glow-gold">Sistema de Cultivo:</strong> 9 Tiers de Transcendência</p>
               </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">⚡</span>
-                <p><span className="text-celestial-jade font-semibold">Tríade Energética:</span> Quintessência, Shadow Chi, Yuan Qi</p>
+              <div className="flex gap-sm">
+                <span style={{ fontSize: '1.25rem' }}>⚡</span>
+                <p><strong className="glow-jade">Tríade Energética:</strong> Quintessência, Shadow Chi, Yuan Qi</p>
               </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">🗡️</span>
-                <p><span className="text-purple-300 font-semibold">Artes Silenciosas:</span> Northern Blade Techniques</p>
+              <div className="flex gap-sm">
+                <span style={{ fontSize: '1.25rem' }}>🗡️</span>
+                <p><strong style={{ color: 'var(--purple)' }}>Artes Silenciosas:</strong> Northern Blade Techniques</p>
               </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">🧬</span>
-                <p><span className="text-red-300 font-semibold">Constituições:</span> Mortal, Godfiend, Taboo</p>
+              <div className="flex gap-sm">
+                <span style={{ fontSize: '1.25rem' }}>🧬</span>
+                <p><strong className="glow-demon">Constituições:</strong> Mortal, Godfiend, Taboo</p>
               </div>
             </div>
           </div>

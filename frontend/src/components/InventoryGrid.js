@@ -13,9 +13,10 @@ const InventoryGrid = () => {
       setIsLoading(true);
       try {
         const data = await loadInventory();
-        setInventory(data);
+        setInventory(data || []);
       } catch (error) {
         console.error('Erro ao carregar inventário:', error);
+        setInventory([]);
       } finally {
         setIsLoading(false);
       }
@@ -26,11 +27,11 @@ const InventoryGrid = () => {
 
   if (isLoading) {
     return (
-      <div className="glass-panel p-6 rounded-xl">
-        <h3 className="text-lg text-gold-glow mb-4 text-center font-title">Inventário</h3>
-        <div className="flex items-center justify-center gap-2 text-jade">
-          <div className="w-6 h-6 border-4 border-jade/20 border-t-jade rounded-full animate-spin"></div>
-          <span className="font-body">Carregando...</span>
+      <div className="panel" style={{ padding: 'var(--spacing-lg)' }}>
+        <h3 className="glow-gold text-center" style={{ marginBottom: 'var(--spacing-md)' }}>Inventário</h3>
+        <div className="flex items-center justify-center gap-sm">
+          <div className="spinner" style={{ width: '24px', height: '24px' }}></div>
+          <span style={{ color: 'var(--jade)' }}>Carregando...</span>
         </div>
       </div>
     );
@@ -38,33 +39,33 @@ const InventoryGrid = () => {
 
   if (!inventory || inventory.length === 0) {
     return (
-      <div className="glass-panel p-6 rounded-xl border border-imperial/20">
-        <h3 className="text-lg text-gold-glow mb-4 text-center font-title uppercase tracking-wider">Inventário</h3>
-        <p className="text-slate-400 italic text-center font-body">Nenhum item no inventário</p>
+      <div className="panel card-gold" style={{ padding: 'var(--spacing-lg)' }}>
+        <h3 className="glow-gold text-center" style={{ marginBottom: 'var(--spacing-md)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Inventário</h3>
+        <p style={{ color: 'var(--text-tertiary)', fontStyle: 'italic', textAlign: 'center' }}>Nenhum item no inventário</p>
       </div>
     );
   }
 
   return (
-    <div className="glass-panel p-6 rounded-xl border border-imperial/20">
-      <h3 className="text-lg text-gold-glow mb-4 text-center font-title uppercase tracking-wider">Inventário</h3>
-      <div className="grid grid-cols-4 gap-3">
+    <div className="panel card-gold" style={{ padding: 'var(--spacing-lg)' }}>
+      <h3 className="glow-gold text-center" style={{ marginBottom: 'var(--spacing-md)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Inventário</h3>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--spacing-sm)' }}>
         {inventory.map((item, index) => (
           <div 
             key={index} 
-            className="
-              glass-panel p-3 rounded-lg text-center 
-              border border-mist-border hover:border-imperial 
-              transition-all duration-300 hover:scale-105 hover:shadow-mystic
-              cursor-pointer group
-            "
+            className="panel card-hover text-center"
+            style={{ 
+              padding: 'var(--spacing-sm)',
+              cursor: 'pointer',
+              transition: 'all var(--transition-base)'
+            }}
             title={item.description || item.name}
           >
-            <div className="text-2xl mb-2">{item.icon || '📦'}</div>
-            <p className="text-slate-200 text-sm font-body truncate group-hover:text-gold-glow">
+            <div style={{ fontSize: '1.5rem', marginBottom: 'var(--spacing-xs)' }}>{item.icon || '📦'}</div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {item.name || item.item_id}
             </p>
-            <p className="text-imperial font-bold text-xs mt-1">x{item.quantity}</p>
+            <p style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--gold)' }}>x{item.quantity}</p>
           </div>
         ))}
       </div>

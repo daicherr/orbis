@@ -2,12 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * 📜 QUEST LOG - Sistema de Missões Dinâmicas
- * 
- * Mostra missões ativas do player com:
- * - Progresso (barra visual)
- * - Deadline (turnos restantes)
- * - Recompensas (XP, Gold, Items)
- * - Status (Ativa, Completa, Falhou)
  */
 export default function QuestLog({ playerId, isOpen, onClose }) {
   const [quests, setQuests] = useState([]);
@@ -23,17 +17,13 @@ export default function QuestLog({ playerId, isOpen, onClose }) {
   const fetchQuests = async () => {
     try {
       setLoading(true);
-      
-      // Buscar quests ativas
       const questsResponse = await fetch(`http://localhost:8000/quest/active/${playerId}`);
-      const questsData = await questsResponse.json();
-      
-      // Buscar turno atual
-      const turnResponse = await fetch('http://localhost:8000/game/current-turn');
-      const turnData = await turnResponse.json();
-      
-      setQuests(questsData.quests || []);
-      setCurrentTurn(turnData.current_turn || 0);
+      if (questsResponse.ok) {
+        const questsData = await questsResponse.json();
+        setQuests(questsData.quests || []);
+      } else {
+        setQuests([]);
+      }
     } catch (error) {
       console.error('Erro ao buscar quests:', error);
       setQuests([]);
@@ -43,175 +33,107 @@ export default function QuestLog({ playerId, isOpen, onClose }) {
   };
 
   const getProgressPercent = (quest) => {
-    if (quest.required_progress === 0) return 0;
+    if (!quest.required_progress || quest.required_progress === 0) return 0;
     return Math.min(100, (quest.current_progress / quest.required_progress) * 100);
   };
 
-  const getDeadlineColor = (quest) => {
-    const turnsRemaining = quest.deadline_turn - currentTurn;
-    
-    if (quest.status === 'completed') return 'text-green-400';
-    if (quest.status === 'failed') return 'text-red-400';
-    if (turnsRemaining > 20) return 'text-green-400';
-    if (turnsRemaining > 10) return 'text-yellow-400';
-    return 'text-red-400';
+  const getDeadlineStyle = (quest) => {
+    const turnsRemaining = (quest.deadline_turn || 0) - currentTurn;
+    if (quest.status === 'completed') return { color: 'var(--jade)' };
+    if (quest.status === 'failed') return { color: 'var(--demon)' };
+    if (turnsRemaining > 20) return { color: 'var(--jade)' };
+    if (turnsRemaining > 10) return { color: 'var(--gold)' };
+    return { color: 'var(--demon)' };
   };
 
   const getStatusBadge = (quest) => {
-    const turnsRemaining = quest.deadline_turn - currentTurn;
-    
-    if (quest.status === 'completed') {
-      return (
-        <span className="px-3 py-1 bg-green-600/30 border border-green-500 rounded-full text-green-300 text-sm">
-          ✅ COMPLETA
-        </span>
-      );
-    }
-    
-    if (quest.status === 'failed') {
-      return (
-        <span className="px-3 py-1 bg-red-600/30 border border-red-500 rounded-full text-red-300 text-sm">
-          ❌ FALHOU
-        </span>
-      );
-    }
-    
-    return (
-      <span className="px-3 py-1 bg-blue-600/30 border border-blue-500 rounded-full text-blue-300 text-sm">
-        🔥 ATIVA
-      </span>
-    );
+    if (quest.status === 'completed') return <span className="badge badge-jade">✅ COMPLETA</span>;
+    if (quest.status === 'failed') return <span className="badge badge-demon">❌ FALHOU</span>;
+    return <span className="badge badge-gold">🔥 ATIVA</span>;
   };
 
   const getQuestTypeIcon = (type) => {
-    const icons = {
-      hunt: '⚔️',
-      delivery: '📦',
-      duel: '🤺',
-      explore: '🗺️',
-      gather: '🌿'
-    };
+    const icons = { hunt: '⚔️', delivery: '📦', duel: '🤺', explore: '🗺️', gather: '🌿' };
     return icons[type] || '📜';
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-4xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-600/50 rounded-lg shadow-2xl overflow-hidden">
-        
+    <div className="modal-overlay" onClick={onClose}>
+      <div 
+        className="card card-gold fade-in" 
+        style={{ maxWidth: '800px', width: '100%', maxHeight: '90vh', overflow: 'hidden' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-amber-900/40 to-orange-900/40 border-b-2 border-amber-600/50 p-6">
+        <div style={{ borderBottom: '2px solid var(--border-accent)', paddingBottom: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-3xl font-bold text-amber-300 mb-1">
-                📜 REGISTRO DE MISSÕES
-              </h2>
-              <p className="text-amber-200/60 text-sm">
-                Turno Atual: {currentTurn} | Missões Ativas: {quests.filter(q => q.status === 'active').length}
+              <h2 className="glow-gold" style={{ marginBottom: 'var(--spacing-xs)' }}>📜 REGISTRO DE MISSÕES</h2>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                Missões Ativas: {quests.filter(q => q.status === 'active').length}
               </p>
             </div>
-            
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500 rounded text-red-300 transition-colors"
-            >
-              ✕ Fechar
-            </button>
+            <button onClick={onClose} className="btn btn-ghost">✕ Fechar</button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 180px)' }}>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
-              <p className="text-amber-300">Carregando missões...</p>
+            <div className="text-center" style={{ padding: 'var(--spacing-2xl)' }}>
+              <div className="spinner"></div>
+              <p style={{ marginTop: 'var(--spacing-md)', color: 'var(--gold)' }}>Carregando missões...</p>
             </div>
           ) : quests.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-amber-300/60 text-xl mb-2">📜</p>
-              <p className="text-amber-300/60">Nenhuma missão disponível</p>
-              <p className="text-amber-300/40 text-sm mt-2">
-                Visite locais para desbloquear novas missões
-              </p>
+            <div className="text-center" style={{ padding: 'var(--spacing-2xl)' }}>
+              <p style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>📜</p>
+              <p style={{ color: 'var(--text-secondary)' }}>Nenhuma missão disponível</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-md">
               {quests.map((quest) => {
                 const progressPercent = getProgressPercent(quest);
-                const deadlineColor = getDeadlineColor(quest);
-                const turnsRemaining = quest.deadline_turn - currentTurn;
+                const deadlineStyle = getDeadlineStyle(quest);
+                const turnsRemaining = (quest.deadline_turn || 0) - currentTurn;
 
                 return (
-                  <div
-                    key={quest.id}
-                    className="bg-slate-800/50 border border-amber-600/30 rounded-lg p-5 hover:border-amber-600/50 transition-all"
-                  >
-                    {/* Quest Header */}
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">{getQuestTypeIcon(quest.type)}</span>
-                          <h3 className="text-xl font-bold text-amber-200">
-                            {quest.title}
-                          </h3>
+                  <div key={quest.id} className="card card-hover panel">
+                    <div className="flex justify-between items-start" style={{ marginBottom: 'var(--spacing-md)' }}>
+                      <div style={{ flex: 1 }}>
+                        <div className="flex items-center gap-sm" style={{ marginBottom: 'var(--spacing-sm)' }}>
+                          <span style={{ fontSize: '1.5rem' }}>{getQuestTypeIcon(quest.type)}</span>
+                          <h3 className="glow-gold" style={{ fontSize: '1.25rem' }}>{quest.title}</h3>
                         </div>
-                        <p className="text-amber-100/80 text-sm mb-2">
-                          {quest.description}
-                        </p>
-                        <p className="text-amber-300/60 text-xs">
-                          📍 {quest.location}
-                        </p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{quest.description}</p>
                       </div>
-                      
-                      <div className="ml-4">
-                        {getStatusBadge(quest)}
-                      </div>
+                      <div style={{ marginLeft: 'var(--spacing-md)' }}>{getStatusBadge(quest)}</div>
                     </div>
 
-                    {/* Progress Bar */}
                     {quest.type === 'hunt' && quest.status === 'active' && (
-                      <div className="mb-3">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-amber-300">Progresso:</span>
-                          <span className="text-amber-200">
-                            {quest.current_progress} / {quest.required_progress}
-                          </span>
+                      <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                        <div className="flex justify-between" style={{ marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem' }}>
+                          <span style={{ color: 'var(--gold)' }}>Progresso:</span>
+                          <span>{quest.current_progress} / {quest.required_progress}</span>
                         </div>
-                        <div className="w-full bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                          <div
-                            className="bg-gradient-to-r from-amber-500 to-orange-500 h-2.5 rounded-full transition-all duration-300"
-                            style={{ width: `${progressPercent}%` }}
-                          />
+                        <div className="progress-bar">
+                          <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
                         </div>
                       </div>
                     )}
 
-                    {/* Deadline */}
-                    <div className="mb-3">
-                      <span className={`text-sm font-semibold ${deadlineColor}`}>
-                        ⏳ Prazo: {turnsRemaining > 0 ? `${turnsRemaining} turnos restantes` : 'EXPIRADO'}
+                    <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: '600', ...deadlineStyle }}>
+                        ⏳ Prazo: {turnsRemaining > 0 ? `${turnsRemaining} turnos` : 'EXPIRADO'}
                       </span>
                     </div>
 
-                    {/* Rewards */}
-                    <div className="bg-slate-900/50 border border-amber-600/20 rounded p-3">
-                      <p className="text-amber-300/80 text-sm mb-2 font-semibold">
-                        💰 RECOMPENSAS:
-                      </p>
-                      <div className="flex gap-4 text-sm">
-                        <span className="text-blue-300">
-                          ⚡ {quest.reward_xp} XP
-                        </span>
-                        <span className="text-yellow-300">
-                          💎 {quest.reward_gold} Gold
-                        </span>
-                        {quest.reward_items && quest.reward_items.length > 0 && (
-                          <span className="text-purple-300">
-                            🎁 {quest.reward_items.length} items
-                          </span>
-                        )}
+                    <div className="panel" style={{ background: 'var(--bg-secondary)' }}>
+                      <p style={{ color: 'var(--gold)', fontSize: '0.875rem', marginBottom: 'var(--spacing-sm)', fontWeight: '600' }}>💰 RECOMPENSAS:</p>
+                      <div className="flex gap-lg" style={{ fontSize: '0.875rem' }}>
+                        <span style={{ color: 'var(--jade)' }}>⚡ {quest.reward_xp} XP</span>
+                        <span style={{ color: 'var(--gold-light)' }}>💎 {quest.reward_gold} Gold</span>
                       </div>
                     </div>
                   </div>
@@ -219,13 +141,6 @@ export default function QuestLog({ playerId, isOpen, onClose }) {
               })}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 border-t-2 border-amber-600/30 p-4 text-center">
-          <p className="text-amber-300/60 text-sm">
-            💡 Missões falham automaticamente ao atingir o prazo limite
-          </p>
         </div>
       </div>
     </div>

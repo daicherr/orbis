@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 from contextlib import asynccontextmanager
@@ -15,8 +16,10 @@ from app.database.repositories.player_repo import PlayerRepository
 from app.database.repositories.npc_repo import NpcRepository
 from app.database.repositories.hybrid_search import HybridSearchRepository
 from app.database.repositories.gamelog_repo import GameLogRepository
+from app.database.repositories.world_event_repo import WorldEventRepository
 from app.services.gemini_client import GeminiClient
-from app.services.embedding_service import EmbeddingService
+from app.services.embedding_service import EmbeddingService, embedding_service
+from app.services.lore_cache import lore_cache
 from app.agents.narrator import Narrator
 from app.agents.referee import Referee
 from app.agents.director import Director
@@ -38,6 +41,9 @@ async def lifespan(app: FastAPI):
     # Setup na inicialização
     print("Iniciando a aplicação e os serviços...")
     
+    # Sprint 14: Pré-carregar lore cache (rápido, ~10ms)
+    lore_cache.load()
+    
     # Garante pgvector e cria tabelas (se não existirem) com retry
     for attempt in range(10):
         try:
@@ -54,24 +60,36 @@ async def lifespan(app: FastAPI):
 
     # Inicializar serviços
     try:
+        print("[DEBUG] Inicializando GeminiClient...")
         gemini_client = GeminiClient()
         app_state["gemini_client"] = gemini_client
+        print("[DEBUG] Inicializando Narrator...")
         app_state["narrator"] = Narrator(gemini_client=gemini_client, lore_files_path="./lore_library")
+        print("[DEBUG] Inicializando Referee...")
         app_state["referee"] = Referee(gemini_client=gemini_client)
+        print("[DEBUG] Inicializando Stylizer...")
         app_state["stylizer"] = Stylizer(gemini_client=gemini_client)
+        print("[DEBUG] Inicializando Scribe...")
         app_state["scribe"] = Scribe(gemini_client=gemini_client)
+        print("[DEBUG] Inicializando Architect...")
         app_state["architect"] = Architect(gemini_client=gemini_client)
+        print("[DEBUG] Inicializando Profiler...")
         app_state["profiler"] = Profiler()
         
         # Inicializar WorldSimulator (coordena Strategist, Diplomat, GossipMonger)
         # Precisaremos passar os repositórios mais tarde nas chamadas
+        print("[DEBUG] Inicializando WorldSimulator...")
         app_state["world_simulator"] = WorldSimulator(gemini_client=gemini_client)
         print("Serviços de IA inicializados (incluindo WorldSimulator).")
-    except ValueError as e:
-        print(f"ERRO CRÍTICO: Falha ao inicializar o GeminiClient. Verifique a GEMINI_API_KEY. Detalhes: {e}")
-        # Em um app real, poderíamos decidir parar a inicialização aqui.
+    except Exception as e:
+        print(f"ERRO CRÍTICO: Falha ao inicializar serviços. Detalhes: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise  # Re-raise para forçar o app a não iniciar
     
+    print("[DEBUG] Lifespan startup completo, entrando em yield...")
     yield
+    print("[DEBUG] Lifespan shutdown iniciado...")
     
     # Cleanup no desligamento
     print("Encerrando a aplicação...")
@@ -97,7 +115,7 @@ app.add_middleware(
 # --- Gestão de Dependências ---
 
 async def get_session():
-    async with AsyncSession(engine) as session:
+    async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session
 
 # Alias para compatibilidade com Sprint 6
@@ -108,7 +126,7 @@ async def get_director(session: AsyncSession = Depends(get_session)) -> Director
     npc_repo = NpcRepository(session)
     
     # Initialize GameLogRepository with EmbeddingService
-    embedding_service = EmbeddingService(gemini_client=app_state["gemini_client"])
+    embedding_service = EmbeddingService()
     gamelog_repo = GameLogRepository(session, embedding_service=embedding_service)
     
     # Initialize HybridSearchRepository (Memory)
@@ -153,6 +171,96 @@ async def health_db():
     except Exception as e:
         return {"status": "error", "db": str(e)}
 
+
+@app.post("/system/warmup")
+async def warmup_system():
+    """
+    Sprint 14: Endpoint de warmup para pré-carregar serviços pesados.
+    
+    Útil para:
+    - Reduzir latência da primeira request
+    - Pré-aquecer modelos de IA e embeddings
+    - Health check mais completo
+    
+    Chamado pelo frontend no load inicial.
+    """
+    import time
+    results = {}
+    start_total = time.time()
+    
+    # 1. Lore cache
+    start = time.time()
+    if not lore_cache.is_loaded():
+        lore_cache.load()
+    results["lore_cache"] = {
+        "status": "ok" if lore_cache.is_loaded() else "error",
+        "time_ms": int((time.time() - start) * 1000)
+    }
+    
+    # 2. Embedding model (mais lento)
+    start = time.time()
+    try:
+        embedding_service.preload()
+        results["embedding_model"] = {
+            "status": "ok",
+            "model_loaded": embedding_service.is_loaded(),
+            "time_ms": int((time.time() - start) * 1000)
+        }
+    except Exception as e:
+        results["embedding_model"] = {
+            "status": "error",
+            "error": str(e),
+            "time_ms": int((time.time() - start) * 1000)
+        }
+    
+    # 3. GeminiClient check
+    gemini = app_state.get("gemini_client")
+    results["gemini_client"] = {
+        "status": "ok" if gemini else "not_initialized",
+        "ai_enabled": gemini.client is not None if gemini else False
+    }
+    
+    # 4. Database check
+    start = time.time()
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        results["database"] = {
+            "status": "ok",
+            "time_ms": int((time.time() - start) * 1000)
+        }
+    except Exception as e:
+        results["database"] = {
+            "status": "error",
+            "error": str(e)
+        }
+    
+    total_time = int((time.time() - start_total) * 1000)
+    
+    return {
+        "status": "ok",
+        "total_time_ms": total_time,
+        "services": results
+    }
+
+
+@app.get("/system/status")
+async def system_status():
+    """
+    Sprint 14: Status rápido do sistema (sem warmup).
+    """
+    return {
+        "status": "ok",
+        "services": {
+            "lore_cache": lore_cache.is_loaded(),
+            "embedding_model": embedding_service.is_loaded(),
+            "gemini_client": app_state.get("gemini_client") is not None,
+            "narrator": app_state.get("narrator") is not None,
+            "world_simulator": app_state.get("world_simulator") is not None
+        }
+    }
+
+
 @app.post("/player/create")
 async def create_player(name: str, session: AsyncSession = Depends(get_session)) -> Player:
     player_repo = PlayerRepository(session)
@@ -166,12 +274,79 @@ async def get_player(player_id: int, session: AsyncSession = Depends(get_session
     Retorna os dados completos de um player (usado pelo CharacterSheet UI).
     """
     player_repo = PlayerRepository(session)
-    player = await player_repo.get(player_id)
+    player = await player_repo.get_by_id(player_id)
     
     if not player:
         raise HTTPException(status_code=404, detail=f"Player {player_id} not found")
     
     return player
+
+# [NEW] GET Player Inventory
+@app.get("/player/{player_id}/inventory")
+async def get_player_inventory(player_id: int, session: AsyncSession = Depends(get_session)):
+    """
+    Retorna o inventário do jogador.
+    """
+    player_repo = PlayerRepository(session)
+    player = await player_repo.get_by_id(player_id)
+    
+    if not player:
+        raise HTTPException(status_code=404, detail=f"Player {player_id} not found")
+    
+    return player.inventory
+
+# [NEW] GET All Players (para seleção de personagens)
+@app.get("/player/list/all", response_model=list[Player])
+async def list_all_players(session: AsyncSession = Depends(get_session)):
+    """
+    Lista todos os personagens criados.
+    """
+    player_repo = PlayerRepository(session)
+    players = await player_repo.get_all()
+    return players
+
+# [NEW] DELETE Player (para deletar personagem)
+@app.delete("/player/{player_id}")
+async def delete_player(player_id: int, session: AsyncSession = Depends(get_session)):
+    """
+    Deleta um personagem permanentemente.
+    """
+    player_repo = PlayerRepository(session)
+    player = await player_repo.get_by_id(player_id)
+    
+    if not player:
+        raise HTTPException(status_code=404, detail=f"Player {player_id} not found")
+    
+    await player_repo.delete(player_id)
+    return {"success": True, "message": f"Personagem '{player.name}' deletado"}
+
+# [NEW] GET Player History - Lista histórico de turnos
+@app.get("/player/{player_id}/history")
+async def get_player_history(
+    player_id: int, 
+    limit: int = 5, 
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Retorna o histórico de turnos do jogador (para verificar persistência).
+    """
+    from app.database.repositories.gamelog_repo import GameLogRepository
+    from app.services.embedding_service import EmbeddingService
+    
+    gamelog_repo = GameLogRepository(session, embedding_service=EmbeddingService())
+    logs = await gamelog_repo.get_recent_turns(player_id, limit=limit)
+    
+    return [
+        {
+            "id": log.id,
+            "turn_number": log.turn_number,
+            "player_input": log.player_input[:100] + "..." if len(log.player_input) > 100 else log.player_input,
+            "location": log.location,
+            "world_time": log.world_time,
+            "created_at": str(log.created_at) if log.created_at else None,
+        }
+        for log in logs
+    ]
 
 @app.post("/game/turn")
 async def game_turn(player_id: int, player_input: str, director: Director = Depends(get_director)):
@@ -183,6 +358,149 @@ async def game_turn(player_id: int, player_input: str, director: Director = Depe
         raise HTTPException(status_code=404, detail=result.get("error"))
         
     return result
+
+
+@app.post("/game/turn/stream")
+async def game_turn_stream(
+    player_id: int, 
+    player_input: str, 
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Sprint 13: Endpoint de streaming SSE para resposta narrativa.
+    
+    Retorna Server-Sent Events com chunks da narrativa conforme são gerados.
+    Isso reduz a latência percebida pelo usuário.
+    
+    Eventos SSE:
+    - event: scene_chunk - Chunks da narrativa
+    - event: metadata - Informações do turno (player_state, npcs, etc)
+    - event: done - Sinaliza fim do streaming
+    """
+    import json
+    
+    # Obter serviços necessários
+    narrator = app_state.get("narrator")
+    referee = app_state.get("referee")
+    
+    if not narrator:
+        raise HTTPException(status_code=503, detail="Narrator not initialized")
+    
+    # Obter player e contexto
+    player_repo = PlayerRepository(session)
+    npc_repo = NpcRepository(session)
+    gamelog_repo = GameLogRepository(session)
+    
+    player = await player_repo.get_by_id(player_id)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    await session.refresh(player)
+    
+    current_location = player.current_location or "Floresta Assombrada"
+    npcs_in_scene = await npc_repo.get_by_location(current_location)
+    
+    # Buscar narração anterior para contexto
+    previous_narration = ""
+    is_first_scene = False
+    recent_turns = await gamelog_repo.get_recent_turns(player_id, limit=1)
+    if recent_turns:
+        previous_narration = recent_turns[-1].scene_description
+    else:
+        is_first_scene = True
+    
+    # Preparar memórias
+    memory_repo = HybridSearchRepository(session)
+    
+    async def event_generator():
+        """Gera eventos SSE com a narrativa em streaming."""
+        try:
+            # Primeiro, envia metadados do turno
+            metadata = {
+                "player_state": {
+                    "id": player.id,
+                    "name": player.name,
+                    "current_location": current_location,
+                    "current_hp": player.current_hp,
+                    "max_hp": player.max_hp,
+                },
+                "npcs_in_scene": [
+                    {"id": npc.id, "name": npc.name, "emotional_state": npc.emotional_state}
+                    for npc in npcs_in_scene
+                ],
+                "world_time": world_clock.get_current_datetime().isoformat()
+            }
+            yield f"event: metadata\ndata: {json.dumps(metadata)}\n\n"
+            
+            # Stream da narrativa
+            full_scene = ""
+            async for chunk in narrator.generate_scene_stream(
+                player=player,
+                location=current_location,
+                npcs_in_scene=npcs_in_scene,
+                player_last_action=player_input,
+                previous_narration=previous_narration,
+                memory_repo=memory_repo,
+                is_first_scene=is_first_scene
+            ):
+                full_scene += chunk
+                # Envia cada chunk como evento SSE
+                yield f"event: scene_chunk\ndata: {json.dumps({'text': chunk})}\n\n"
+            
+            # Salvar no game log (após terminar streaming)
+            try:
+                turn_number = len(recent_turns) + 1 if recent_turns else 1
+                await gamelog_repo.create_log(
+                    player_id=player_id,
+                    turn_number=turn_number,
+                    player_input=player_input,
+                    scene_description=full_scene,
+                    action_result="",
+                    location=current_location,
+                    npcs_present=[npc.name for npc in npcs_in_scene],
+                    world_time=world_clock.get_current_datetime().isoformat()
+                )
+            except Exception as e:
+                print(f"[WARN] Erro ao salvar log: {e}")
+            
+            # Sinaliza fim do streaming
+            yield f"event: done\ndata: {json.dumps({'success': True})}\n\n"
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # Desabilita buffering do nginx
+        }
+    )
+
+
+# --- NPC Endpoints ---
+@app.get("/npc/list/all")
+async def list_all_npcs(session: AsyncSession = Depends(get_session)):
+    """Retorna todos os NPCs do banco de dados."""
+    npc_repo = NpcRepository(session)
+    npcs = await npc_repo.get_all()
+    return [
+        {
+            "id": npc.id,
+            "name": npc.name,
+            "rank": npc.rank,
+            "current_hp": npc.current_hp,
+            "max_hp": npc.max_hp,
+            "current_location": npc.current_location,
+            "emotional_state": npc.emotional_state,
+            "personality_traits": npc.personality_traits,
+        }
+        for npc in npcs
+    ]
 
 @app.post("/npc/{npc_id}/observe")
 async def observe_npc(
@@ -226,21 +544,59 @@ async def simulation_tick(session: AsyncSession = Depends(get_session)):
     - Strategist move vilões hostis
     - Diplomat gerencia relações de facção
     - GossipMonger espalha rumores
-    - DailyTickSimulator atualiza economia e clima
+    - DailyTickSimulator atualiza economia, facções e ecologia
     """
-    npc_repo = NpcRepository(session)
-    player_repo = PlayerRepository(session)
+    from app.database.repositories.faction_repo import FactionRepository
+    from app.database.repositories.economy_repo import GlobalEconomyRepository
     
-    # WorldSimulator (Strategist, Diplomat, GossipMonger)
-    world_sim = app_state.get("world_simulator")
-    if world_sim:
-        await world_sim.run_simulation_tick(npc_repo, player_repo)
-    
-    # DailyTickSimulator (Economia, Clima, Linhagem)
-    daily_sim = DailyTickSimulator()
-    await daily_sim.run_daily_simulation()
-    
-    return {"status": "ok", "message": "World simulation executed (villains, diplomacy, rumors, economy)"}
+    try:
+        npc_repo = NpcRepository(session)
+        player_repo = PlayerRepository(session)
+        faction_repo = FactionRepository(session)
+        economy_repo = GlobalEconomyRepository(session)
+        event_repo = WorldEventRepository(session)
+        
+        results = {
+            "world_sim": None,
+            "daily_sim": None
+        }
+        
+        # WorldSimulator (Strategist, Diplomat, GossipMonger)
+        world_sim = app_state.get("world_simulator")
+        if world_sim:
+            try:
+                await world_sim.run_simulation_tick(npc_repo, player_repo)
+                results["world_sim"] = "executed"
+            except Exception as e:
+                results["world_sim"] = f"error: {str(e)}"
+        else:
+            results["world_sim"] = "not_initialized"
+        
+        # DailyTickSimulator completo (Economia, Facções, Ecologia, Linhagem)
+        daily_sim = DailyTickSimulator(
+            npc_repo=npc_repo,
+            faction_repo=faction_repo,
+            economy_repo=economy_repo,
+            world_event_repo=event_repo
+        )
+        
+        report = await daily_sim.run_daily_simulation(current_turn=world_clock.get_current_turn())
+        results["daily_sim"] = {
+            "turn": report.get("turn"),
+            "total_events": len(report.get("events", [])),
+            "faction_events": len(report.get("faction_events", [])),
+            "economy_changes": len(report.get("economy_changes", []))
+        }
+        
+        return {
+            "status": "ok", 
+            "message": "World simulation executed (villains, diplomacy, rumors, economy, factions)",
+            "results": results
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/world/time")
 async def get_world_time():
@@ -296,7 +652,15 @@ async def generate_session_zero_questions(
     if not architect:
         raise HTTPException(status_code=500, detail="Architect service not available")
     
-    # Prompt para Gemini gerar perguntas
+    # PERGUNTAS OBRIGATÓRIAS - Definem contexto inicial e primeira cena
+    # Estas perguntas são SEMPRE feitas, não são geradas por IA
+    mandatory_questions = [
+        "Descreva o momento exato onde sua jornada começa. O que está acontecendo ao seu redor agora?",
+        "Onde é seu refúgio? Descreva o lugar que você considera 'lar' ou onde se sente seguro.",
+        "Quem é a pessoa mais importante na sua vida neste momento? Descreva ela brevemente."
+    ]
+    
+    # Prompt para Gemini gerar 2 perguntas ADICIONAIS personalizadas
     prompt = f"""
 Você é o Mestre de um RPG de cultivação chamado Códice Triluna.
 Um novo jogador está criando seu personagem:
@@ -304,42 +668,38 @@ Um novo jogador está criando seu personagem:
 - Constituição: {request.constitution}
 - Local de Origem: {request.origin_location}
 
-Gere EXATAMENTE 3 perguntas profundas e pessoais para entender a motivação e o passado desse personagem.
+Gere EXATAMENTE 2 perguntas adicionais profundas e pessoais para entender a motivação desse personagem.
 As perguntas devem ser específicas ao contexto (constituição e origem).
+NÃO pergunte sobre local de início, lar ou pessoa importante (já foram perguntados).
 
-Formato: Retorne apenas as perguntas, uma por linha, sem numeração.
-Exemplo:
-Qual foi o momento que definiu seu destino na cultivação?
-Que sacrifício você fez para obter seu poder atual?
-Quem é a pessoa que você mais deseja proteger ou vingar?
+Foque em:
+- Motivações e objetivos
+- Medos e conflitos internos
+- Eventos traumáticos do passado
+
+Formato: Retorne apenas as 2 perguntas, uma por linha, sem numeração.
 """
     
     try:
-        # Usar Gemini para gerar perguntas (modelo flash para rapidez)
+        # Usar Gemini para gerar perguntas adicionais
         response = await architect.gemini_client.generate_content_async(
             prompt=prompt,
             model_type="flash"
         )
         
-        # Parse das perguntas
-        questions = [q.strip() for q in response.strip().split('\n') if q.strip()]
+        # Parse das perguntas geradas
+        ai_questions = [q.strip() for q in response.strip().split('\n') if q.strip()][:2]
         
-        # Garantir que temos exatamente 3 perguntas
-        if len(questions) < 3:
-            questions.extend([
-                "Qual é o seu maior objetivo na cultivação?",
-                "O que você mais teme perder?",
-                "Como você enfrenta adversidades?"
-            ])
+        # Combinar: 3 obrigatórias + 2 geradas = 5 perguntas
+        all_questions = mandatory_questions + ai_questions
         
-        return SessionZeroResponse(questions=questions[:3])
+        return SessionZeroResponse(questions=all_questions)
     
     except Exception as e:
-        # Fallback com perguntas genéricas
-        return SessionZeroResponse(questions=[
-            "Qual foi o momento que definiu seu destino na cultivação?",
-            "Que sacrifício você fez para obter seu poder atual?",
-            "Quem é a pessoa que você mais deseja proteger ou vingar?"
+        # Fallback: só perguntas obrigatórias + 2 genéricas
+        return SessionZeroResponse(questions=mandatory_questions + [
+            "Qual é o seu maior objetivo na cultivação?",
+            "O que você mais teme perder?"
         ])
 
 @app.post("/player/create-full", response_model=Player)
@@ -350,10 +710,19 @@ async def create_player_full(
     """
     Cria um player completo com todos os dados do Character Creation Wizard:
     - Nome, aparência, constituição, origem, e backstory gerada pelo Session Zero
+    - Agora também cria: home_location, first_scene_context, important_npc
     """
+    from app.core.location_manager import LocationManager
+    
     architect = app_state.get("architect")
     if not architect:
         raise HTTPException(status_code=500, detail="Architect service not available")
+    
+    # Extrair respostas das perguntas obrigatórias (primeiras 3)
+    answers = request.session_zero_answers
+    first_scene_context = answers[0] if len(answers) > 0 else None  # "Onde sua jornada começa"
+    home_description = answers[1] if len(answers) > 1 else None      # "Seu lar/refúgio"
+    important_npc_desc = answers[2] if len(answers) > 2 else None    # "Pessoa importante"
     
     # Gerar backstory narrativa baseada nas respostas
     backstory_prompt = f"""
@@ -365,14 +734,23 @@ Aparência: {request.appearance or 'Não especificada'}
 Constituição: {request.constitution}
 Local de Origem: {request.origin_location}
 
-Respostas do Session Zero:
-{chr(10).join(f'- {ans}' for ans in request.session_zero_answers)}
+CONTEXTO INICIAL (onde a jornada começa):
+{first_scene_context or 'Não especificado'}
+
+LAR/REFÚGIO:
+{home_description or 'Não especificado'}
+
+PESSOA IMPORTANTE:
+{important_npc_desc or 'Não especificado'}
+
+Respostas adicionais do Session Zero:
+{chr(10).join(f'- {ans}' for ans in answers[3:]) if len(answers) > 3 else 'Nenhuma'}
 
 Crie um parágrafo narrativo (4-6 linhas) descrevendo a história de fundo desse personagem.
 O texto deve ser literário, no estilo de xianxia/wuxia, e mencionar:
-- Sua origem e constituição
-- Motivações e conflitos internos
-- Como ele chegou ao ponto atual da jornada
+- Sua origem, constituição e lar
+- A pessoa importante em sua vida
+- Como ele chegou ao momento atual (contexto inicial)
 
 Escreva em português brasileiro, tom épico mas pessoal.
 """
@@ -383,8 +761,27 @@ Escreva em português brasileiro, tom épico mas pessoal.
             model_type="flash"
         )
     except Exception as e:
-        # Fallback com backstory genérica
         backstory = f"{request.name}, nascido em {request.origin_location}, carrega a marca de uma {request.constitution}. Sua jornada de cultivação está apenas começando, mas o destino já traçou seu caminho entre os mortais e imortais."
+    
+    # Extrair nome do NPC importante (se houver)
+    important_npc_name = None
+    if important_npc_desc:
+        # Tentar extrair um nome da descrição
+        try:
+            npc_prompt = f"""
+Extraia APENAS o nome da pessoa descrita abaixo. 
+Se não houver nome claro, crie um nome apropriado para um NPC de xianxia.
+Retorne APENAS o nome, nada mais.
+
+Descrição: {important_npc_desc}
+"""
+            important_npc_name = await architect.gemini_client.generate_content_async(
+                prompt=npc_prompt,
+                model_type="flash"
+            )
+            important_npc_name = important_npc_name.strip()[:50]  # Limitar tamanho
+        except:
+            important_npc_name = None
     
     # Criar player no banco de dados
     player_repo = PlayerRepository(session)
@@ -394,13 +791,37 @@ Escreva em português brasileiro, tom épico mas pessoal.
         constitution_type=request.constitution,
         origin_location=request.origin_location,
         backstory=backstory.strip(),
-        constitution=request.constitution  # constitution é o nome da skill/body
+        constitution=request.constitution,
+        # Novos campos
+        first_scene_context=first_scene_context,
+        important_npc_name=important_npc_name
     )
     
     # [SPRINT 5] Aplicar efeitos de constituição nos stats base
     ConstitutionEffects.apply_constitution_effects(player)
     await session.commit()
     await session.refresh(player)
+    
+    # Criar DynamicLocation para a casa do player (se descreveu)
+    if home_description:
+        location_manager = LocationManager(session, architect.gemini_client)
+        try:
+            home_loc = await location_manager.create_location_from_session_zero(
+                player=player,
+                home_description=home_description
+            )
+            # home_location e home_location_id já são setados pelo método
+            await session.refresh(player)
+        except Exception as e:
+            # Se falhar ao criar casa, usar origin_location como fallback
+            player.home_location = request.origin_location
+            await session.commit()
+            await session.refresh(player)
+    else:
+        # Sem descrição de casa, usar origin como home
+        player.home_location = request.origin_location
+        await session.commit()
+        await session.refresh(player)
     
     return player
 
@@ -460,7 +881,7 @@ async def buy_item(
     Compra um item. Deduz ouro do jogador e adiciona item ao inventário.
     """
     player_repo = PlayerRepository(session)
-    player = await player_repo.get(request.player_id)
+    player = await player_repo.get_by_id(request.player_id)
     
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -495,10 +916,12 @@ async def buy_item(
         "buy_price": final_price
     }
     
-    player.inventory.append(new_item)
+    # Copiar lista para forçar SQLAlchemy a detectar a mudança
+    updated_inventory = list(player.inventory) if player.inventory else []
+    updated_inventory.append(new_item)
+    player.inventory = updated_inventory
     
-    await session.commit()
-    await session.refresh(player)
+    await player_repo.update(player)
     
     return {
         "success": True,
@@ -516,7 +939,7 @@ async def sell_item(
     Vende um item do inventário. Adiciona ouro ao jogador e remove item.
     """
     player_repo = PlayerRepository(session)
-    player = await player_repo.get(request.player_id)
+    player = await player_repo.get_by_id(request.player_id)
     
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -554,15 +977,53 @@ async def sell_item(
 # ========== SPRINT 6: QUEST ENDPOINTS ==========
 
 @app.post("/quest/generate")
-async def generate_quest(player_id: int, session: AsyncSession = Depends(get_async_session)):
-    """Gera uma nova quest para o player baseada em origin_location e tier."""
+async def generate_quest(
+    player_id: int, 
+    use_ai: bool = True,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Gera uma nova quest para o player.
+    
+    Args:
+        player_id: ID do jogador
+        use_ai: Se True, usa IA para gerar quest contextual. Se False, usa templates.
+    """
     player_repo = PlayerRepository(session)
     player = await player_repo.get_by_id(player_id)
     
     if not player:
         raise HTTPException(status_code=404, detail="Player não encontrado")
     
-    quest = quest_service.generate_quest(player)
+    quest = None
+    
+    if use_ai:
+        # Sprint 12: Geração via IA
+        try:
+            # Buscar contexto recente
+            gamelog_repo = GameLogRepository(session, embedding_service=EmbeddingService())
+            recent_logs = await gamelog_repo.get_recent_turns(player_id, limit=5)
+            recent_events = [log.action_result for log in recent_logs if log.action_result]
+            
+            # Buscar NPCs próximos
+            npc_repo = NpcRepository(session)
+            nearby_npcs_objs = await npc_repo.get_by_location(player.current_location)
+            nearby_npcs = [npc.name for npc in nearby_npcs_objs if npc.emotional_state != "hostile"]
+            
+            quest = await quest_service.generate_quest_ai(
+                player=player,
+                recent_events=recent_events,
+                nearby_npcs=nearby_npcs,
+                world_context=f"O jogador está em {player.current_location}."
+            )
+        except Exception as e:
+            print(f"[QUEST] Erro na geração AI: {e}")
+            quest = None
+    
+    # Fallback para template
+    if not quest:
+        quest = quest_service.generate_quest(player)
+    
     if not quest:
         raise HTTPException(status_code=400, detail="Não há quests disponíveis para seu tier/localização")
     
@@ -571,7 +1032,8 @@ async def generate_quest(player_id: int, session: AsyncSession = Depends(get_asy
     return {
         "success": True,
         "quest": quest,
-        "message": f"🎯 Nova missão desbloqueada: {quest['title']}"
+        "message": f"🎯 Nova missão desbloqueada: {quest['title']}",
+        "generated_by_ai": quest.get("generated_by_ai", False)
     }
 
 @app.get("/quest/active/{player_id}")
@@ -632,4 +1094,352 @@ async def get_current_turn():
     return {
         "current_turn": world_clock.get_current_turn(),
         "current_date": world_clock.get_current_date()
+    }
+
+# ========== WORLD EVENTS & INVESTIGATION ==========
+
+from app.database.repositories.world_event_repo import WorldEventRepository
+
+class InvestigateRequest(BaseModel):
+    player_id: int
+    event_id: int
+
+class CreateWorldEventRequest(BaseModel):
+    event_type: str  # destruction, npc_death, faction_war, calamity
+    description: str
+    location_affected: Optional[str] = None
+    caused_by_player_id: Optional[int] = None
+    author_alias: Optional[str] = None
+    investigation_difficulty: int = 5
+    clues: List[str] = []
+
+@app.get("/world/events")
+async def get_world_events(
+    location: Optional[str] = None,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Retorna eventos globais ativos.
+    Se location for passado, retorna só eventos daquele local.
+    """
+    event_repo = WorldEventRepository(session)
+    
+    if location:
+        events = await event_repo.get_events_for_location(location)
+    else:
+        events = await event_repo.get_active_events()
+    
+    # Retornar apenas informação pública
+    return {
+        "events": [
+            {
+                "id": e.id,
+                "type": e.event_type,
+                "public_description": e.public_description,
+                "location": e.location_affected,
+                "author_alias": e.author_alias,
+                "difficulty": e.investigation_difficulty,
+                "turn_occurred": e.turn_occurred
+            }
+            for e in events
+        ]
+    }
+
+@app.post("/world/investigate")
+async def investigate_event(
+    request: InvestigateRequest,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Player investiga um evento para descobrir pistas e possivelmente o autor.
+    Dificuldade vs Rank do player determina sucesso.
+    """
+    player_repo = PlayerRepository(session)
+    player = await player_repo.get_by_id(request.player_id)
+    
+    if not player:
+        raise HTTPException(status_code=404, detail="Player não encontrado")
+    
+    event_repo = WorldEventRepository(session)
+    result = await event_repo.investigate_event(
+        event_id=request.event_id,
+        investigator_rank=player.rank
+    )
+    
+    return result
+
+@app.post("/world/create-event")
+async def create_world_event(
+    request: CreateWorldEventRequest,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Cria um novo evento global (usado pelo sistema quando player causa destruição).
+    """
+    event_repo = WorldEventRepository(session)
+    
+    event = await event_repo.create_event(
+        event_type=request.event_type,
+        description=request.description,
+        turn_occurred=world_clock.get_current_turn(),
+        location_affected=request.location_affected,
+        caused_by_player_id=request.caused_by_player_id,
+        author_alias=request.author_alias,
+        investigation_difficulty=request.investigation_difficulty,
+        clues=request.clues,
+        public_description=request.description  # Por padrão, público = descrição
+    )
+    
+    return {
+        "success": True,
+        "event_id": event.id,
+        "message": f"Evento '{request.event_type}' criado em {request.location_affected or 'mundo'}"
+    }
+
+@app.get("/world/events-by-player/{player_id}")
+async def get_events_caused_by_player(
+    player_id: int,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Retorna eventos causados por um player específico.
+    Usado para ver o "legado" de destruição de um personagem.
+    """
+    event_repo = WorldEventRepository(session)
+    events = await event_repo.get_events_by_player(player_id)
+    
+    return {
+        "player_id": player_id,
+        "events_caused": len(events),
+        "events": [
+            {
+                "id": e.id,
+                "type": e.event_type,
+                "description": e.description,
+                "location": e.location_affected,
+                "turn": e.turn_occurred
+            }
+            for e in events
+        ]
+    }
+
+
+# =====================================================
+# ECONOMY ENDPOINTS
+# =====================================================
+
+@app.get("/economy/report")
+async def get_economy_report(session: AsyncSession = Depends(get_async_session)):
+    """
+    Retorna relatório completo da economia mundial.
+    Mostra preços atuais, tendências e recursos.
+    """
+    from app.database.repositories.economy_repo import GlobalEconomyRepository
+    from app.core.simulation.economy import EconomySimulator
+    
+    economy_repo = GlobalEconomyRepository(session)
+    economy_sim = EconomySimulator(economy_repo=economy_repo)
+    
+    report = await economy_sim.get_market_report()
+    
+    return {
+        "status": "ok",
+        "trending_up": report.get("trending_up", []),
+        "trending_down": report.get("trending_down", []),
+        "stable": report.get("stable", []),
+        "prices": report.get("prices", {})
+    }
+
+
+@app.get("/economy/price/{resource_name}")
+async def get_resource_price(
+    resource_name: str,
+    location: str = None,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Retorna o preço atual de um recurso.
+    Opcionalmente aplica modificador regional.
+    """
+    from app.database.repositories.economy_repo import GlobalEconomyRepository
+    from app.core.simulation.economy import EconomySimulator
+    
+    economy_repo = GlobalEconomyRepository(session)
+    economy_sim = EconomySimulator(economy_repo=economy_repo)
+    
+    base_price = await economy_sim.get_current_price(resource_name)
+    
+    if location:
+        final_price = await economy_sim.apply_regional_modifier(
+            location=location,
+            resource_name=resource_name,
+            base_price=base_price
+        )
+    else:
+        final_price = base_price
+    
+    multiplier = await economy_sim.get_price_multiplier(resource_name)
+    
+    return {
+        "resource": resource_name,
+        "location": location,
+        "current_price": round(final_price, 2),
+        "price_multiplier": round(multiplier, 2)
+    }
+
+
+@app.post("/economy/initialize")
+async def initialize_economy(session: AsyncSession = Depends(get_async_session)):
+    """
+    Inicializa a economia com itens padrão.
+    Chamado uma vez na configuração inicial.
+    """
+    from app.database.repositories.economy_repo import GlobalEconomyRepository
+    
+    economy_repo = GlobalEconomyRepository(session)
+    created_items = await economy_repo.initialize_default_economy()
+    
+    return {
+        "status": "ok",
+        "message": f"Economia inicializada com {len(created_items)} itens",
+        "items_created": [item.resource_name for item in created_items]
+    }
+
+
+# =====================================================
+# FACTION ENDPOINTS
+# =====================================================
+
+@app.get("/factions")
+async def get_all_factions(session: AsyncSession = Depends(get_async_session)):
+    """
+    Retorna todas as facções do jogo.
+    """
+    from app.database.repositories.faction_repo import FactionRepository
+    
+    faction_repo = FactionRepository(session)
+    factions = await faction_repo.get_all()
+    
+    return {
+        "status": "ok",
+        "factions": [
+            {
+                "id": f.id,
+                "name": f.name,
+                "power_level": f.power_level,
+                "resources": f.resources,
+                "relations": f.relations
+            }
+            for f in factions
+        ]
+    }
+
+
+@app.get("/factions/{faction_name}")
+async def get_faction_details(
+    faction_name: str,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Retorna detalhes de uma facção específica.
+    """
+    from app.database.repositories.faction_repo import FactionRepository
+    
+    faction_repo = FactionRepository(session)
+    faction = await faction_repo.get_by_name(faction_name)
+    
+    if not faction:
+        raise HTTPException(status_code=404, detail=f"Facção '{faction_name}' não encontrada")
+    
+    allies = await faction_repo.get_allies(faction_name)
+    enemies = await faction_repo.get_enemies(faction_name)
+    
+    return {
+        "id": faction.id,
+        "name": faction.name,
+        "power_level": faction.power_level,
+        "resources": faction.resources,
+        "relations": faction.relations,
+        "allies": allies,
+        "enemies": enemies
+    }
+
+
+@app.post("/factions/initialize")
+async def initialize_factions(session: AsyncSession = Depends(get_async_session)):
+    """
+    Inicializa as facções padrão do jogo.
+    Chamado uma vez na configuração inicial.
+    """
+    from app.database.repositories.faction_repo import FactionRepository
+    
+    faction_repo = FactionRepository(session)
+    created_factions = await faction_repo.initialize_default_factions()
+    
+    return {
+        "status": "ok",
+        "message": f"Facções inicializadas: {len(created_factions)} criadas",
+        "factions_created": [f.name for f in created_factions]
+    }
+
+
+@app.get("/factions/territory/{location}")
+async def get_territory_owner(
+    location: str,
+    session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Retorna qual facção controla um território.
+    """
+    from app.core.simulation.faction_simulator import FactionSimulator
+    
+    faction_sim = FactionSimulator()
+    owner = faction_sim.get_territory_owner(location)
+    
+    return {
+        "location": location,
+        "owner": owner,
+        "is_neutral": owner == "Neutral"
+    }
+
+
+# =====================================================
+# ECOLOGY ENDPOINTS
+# =====================================================
+
+@app.get("/ecology/report")
+async def get_ecology_report():
+    """
+    Retorna relatório de ecologia (populações de monstros).
+    """
+    from app.core.simulation.ecology import EcologySimulator
+    
+    ecology_sim = EcologySimulator()
+    report = ecology_sim.get_ecology_report()
+    
+    return {
+        "status": "ok",
+        "total_monsters": report["total_monsters"],
+        "most_populated": report["most_populated"],
+        "least_populated": report["least_populated"],
+        "high_pressure_regions": report["high_pressure_regions"],
+        "regions": report["regions"]
+    }
+
+
+@app.get("/ecology/encounter/{location}")
+async def get_random_encounter(location: str):
+    """
+    Retorna um monstro aleatório para encontro baseado na localização.
+    """
+    from app.core.simulation.ecology import EcologySimulator
+    
+    ecology_sim = EcologySimulator()
+    monster = ecology_sim.get_random_encounter(location)
+    population = ecology_sim.get_monster_population(location)
+    
+    return {
+        "location": location,
+        "encounter": monster,
+        "local_monsters": population
     }

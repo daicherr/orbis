@@ -17,18 +17,24 @@ class Referee:
         Traduz o input em texto do jogador em uma ação mecânica estruturada
         usando o Gemini para extrair a intenção e as entidades.
         """
-        target_names = ", ".join([npc.name for npc in possible_targets])
+        target_names = ", ".join([npc.name for npc in possible_targets]) if possible_targets else "Nenhum"
+        
+        # Skills disponíveis do jogador
+        player_skills = ", ".join(player.learned_skills) if player.learned_skills else "basic_attack"
 
         prompt = (
             f"Você é um juiz de RPG (referee) que analisa a ação de um jogador. "
             f"Seu trabalho é converter o texto do jogador em um objeto JSON estruturado. "
             f"Analise o texto e preencha o JSON com as seguintes chaves:\n"
-            f"- 'intent': A intenção principal do jogador. Válidas são: 'attack', 'talk', 'move', 'use_item', 'observe', 'unknown'.\n"
-            f"- 'target_name': O nome exato do alvo da ação. Deve ser um dos 'Alvos Possíveis'. Se nenhum alvo for mencionado, deixe como null.\n"
-            f"- 'skill_name': O nome da habilidade ou técnica usada, se mencionada. Se nenhuma for mencionada, deixe como null.\n"
-            f"Seja rigoroso. Se uma informação não estiver claramente no texto, use null.\n\n"
+            f"- 'intent': A intenção principal do jogador. Válidas são: 'attack', 'talk', 'move', 'use_item', 'observe', 'meditate', 'cultivate', 'unknown'.\n"
+            f"- 'target_name': O nome exato do alvo da ação (NPC ou local). Deve ser um dos 'Alvos Possíveis' se for NPC. Para 'move', use o nome do destino.\n"
+            f"- 'destination': O nome do local de destino se intent='move'. Ex: 'Floresta Nublada', 'Vila Crisântemos'.\n"
+            f"- 'skill_name': O ID da habilidade usada. DEVE ser uma das 'Skills Disponíveis'. Se o jogador não especificou uma skill, use 'basic_attack'.\n"
+            f"REGRA IMPORTANTE: Se a intenção é 'attack' e o jogador não especificou uma habilidade exata, use 'basic_attack' como skill_name.\n"
+            f"REGRA IMPORTANTE: Se a intenção é 'move', extraia o destino mencionado e coloque em 'destination'.\n\n"
             f"--- Contexto ---\n"
             f"Alvos Possíveis: {target_names}\n"
+            f"Skills Disponíveis: {player_skills}, basic_attack\n"
             f"Texto do Jogador: \"{player_input}\"\n\n"
             f"--- JSON de Saída ---\n"
         )

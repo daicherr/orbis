@@ -8,9 +8,10 @@ import PlayerHUD from '../components/PlayerHUD';
 import DialogueInput from '../components/DialogueInput';
 import CombatInterface from '../components/CombatInterface';
 import NpcInspector from '../components/NpcInspector';
+import LoadingOverlay from '../components/LoadingOverlay';
 
 export default function GamePage() {
-	const { playerId, playerName, sendAction, isLoading: contextLoading } = useGame();
+	const { playerId, playerName, sendAction, isLoading: contextLoading, refreshFromStorage } = useGame();
 	const [messages, setMessages] = useState([]);
 	const [playerStats, setPlayerStats] = useState(null);
 	const [npcsInScene, setNpcsInScene] = useState([]);
@@ -19,7 +20,19 @@ export default function GamePage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [showCharacterSheet, setShowCharacterSheet] = useState(false);
 	const [showQuestLog, setShowQuestLog] = useState(false);
+	const [loadingType, setLoadingType] = useState('action');
+	const [isInitializing, setIsInitializing] = useState(true);
 	const messagesEndRef = useRef(null);
+
+	// Helper para detectar tipo de loading baseado na ação
+	const detectLoadingType = (action) => {
+		const lowerAction = action.toLowerCase();
+		const sleepKeywords = ['dormir', 'descansar', 'repousar', 'sleep', 'rest', 'recuperar energia'];
+		if (sleepKeywords.some(kw => lowerAction.includes(kw))) {
+			return 'sleep';
+		}
+		return 'action';
+	};
 
 	const playerSkills = [
 		{ id: 'meteor_soul', name: 'Meteor Soul', element: 'shadow', icon: '⚔️', desc: 'Ignora armadura' },
@@ -29,6 +42,13 @@ export default function GamePage() {
 		{ id: 'wall_of_northern_heavens', name: 'Wall of Northern', element: 'defense', icon: '🛡️', desc: 'Reflete 50% dano' },
 		{ id: 'blood_essence_strike', name: 'Blood Essence', element: 'blood', icon: '🩸', desc: 'Usa HP como dano' },
 	];
+
+	// Atualizar playerId do localStorage ao montar
+	useEffect(() => {
+		if (refreshFromStorage) {
+			refreshFromStorage();
+		}
+	}, []);
 
 	useEffect(() => {
 		const initGame = async () => {
@@ -41,7 +61,9 @@ export default function GamePage() {
 			if (playerId && playerName) {
 				setPlayerStats(prev => prev || { name: playerName });
 				setMessages([{ type: 'system', text: `✨ Bem-vindo de volta, ${playerName}. Sua jornada continua...` }]);
-				handleSend('olhar ao redor');
+				setLoadingType('init');
+				await handleSendWithType('olhar ao redor', 'init');
+				setIsInitializing(false);
 			}
 		};
 		initGame();
@@ -56,8 +78,8 @@ export default function GamePage() {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, [messages]);
 
-	const handleSend = async (inputText, pId = playerId) => {
-		if (!pId) {) => {
+	// Versão interna que aceita tipo explícito
+	const handleSendWithType = async (inputText, explicitType = null) => {
 		if (!playerId) {
 			setMessages(prev => [...prev, { type: 'error', text: '⚠️ Player não identificado. Recarregue a página.' }]);
 			return;
@@ -67,10 +89,55 @@ export default function GamePage() {
 			setMessages(prev => [...prev, { type: 'player', text: inputText }]);
 		}
 		setSelectedNpc(null);
+		
+		// Detectar tipo de loading
+		const detectedType = explicitType || detectLoadingType(inputText);
+		setLoadingType(detectedType);
 		setIsLoading(true);
 
 		try {
-			const data = await sendAction(inputTextype: 'narrator', text: data.scene_description }]);
+			const data = await sendAction(inputText);
+			
+			// Detectar se houve dawn tick na resposta
+			if (data.action_result && data.action_result.includes('O sol nasce sobre Orbis')) {
+				setLoadingType('dawn');
+			}
+			
+			setMessages(prev => [...prev, { type: 'narrator', text: data.scene_description }]);
+			return data;
+		} catch (error) {
+			console.error('Failed to send action:', error);
+			setMessages(prev => [...prev, { type: 'error', text: `❌ Erro: ${error.message}` }]);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleSend = async (inputText) => {
+		if (!playerId) {
+			setMessages(prev => [...prev, { type: 'error', text: '⚠️ Player não identificado. Recarregue a página.' }]);
+			return;
+		}
+
+		if (inputText) {
+			setMessages(prev => [...prev, { type: 'player', text: inputText }]);
+		}
+		setSelectedNpc(null);
+		
+		// Detectar tipo de loading
+		const detectedType = detectLoadingType(inputText);
+		setLoadingType(detectedType);
+		setIsLoading(true);
+
+		try {
+			const data = await sendAction(inputText);
+			
+			// Detectar se houve dawn tick
+			if (data.action_result && data.action_result.includes('O sol nasce sobre Orbis')) {
+				setLoadingType('dawn');
+			}
+			
+			setMessages(prev => [...prev, { type: 'narrator', text: data.scene_description }]);
 			if (data.action_result) {
 				setMessages(prev => [...prev, { type: 'action', text: data.action_result }]);
 			}
@@ -117,41 +184,50 @@ export default function GamePage() {
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 			</Head>
 
-			{/* === MAIN HUD CONTAINER (AAA Game Style) === */}
-			<div className="h-screen w-screen nebula-void overflow-hidden flex flex-col">
-				{/* === TOP BAR (Ornate Header with Mystical Glow) === */}
-				<div className="glass-gold m-6 p-5 rounded-2xl border-ornate-gold relative">
-					<div className="flex items-center justify-between relative z-10">
-						<div className="flex items-center gap-8">
-							<h1 className="font-title text-3xl text-gold-glow tracking-wider">
-								✦ CÓDICE TRILUNA ✦
-							</h1>
+			{/* === LOADING OVERLAY === */}
+			<LoadingOverlay 
+				isVisible={isLoading || isInitializing} 
+				loadingType={loadingType} 
+			/>
+
+			{/* === MAIN GAME CONTAINER === */}
+			<div className="game-container">
+				
+				{/* === TOP HEADER BAR === */}
+				<div className="game-header">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-lg">
+							<h1 className="game-title">✦ CÓDICE TRILUNA ✦</h1>
 							<WorldClock />
 						</div>
 						{playerStats && (
-							<div className="flex items-center gap-6">
-								<div className="text-right">
-									<div className="font-display text-xl font-bold text-gold-glow drop-shadow-lg">{playerStats.name}</div>
-									<div className="font-body text-sm text-slate-300 tracking-wide">{getTierName(playerStats.cultivation_tier || 1)}</div>
-								</div>
-								{/* Avatar with Pulsing Glow */}
-								<div className="relative">
-									<div className="w-16 h-16 rounded-full bg-gradient-void flex items-center justify-center text-2xl font-bold shadow-mystic border-2 border-imperial animate-pulse-glow">
-										{playerStats.cultivation_tier || 1}
+							<div className="flex items-center gap-lg">
+								<div style={{ textAlign: 'right' }}>
+									<div className="glow-gold" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+										{playerStats.name}
 									</div>
-									<div className="absolute -inset-1 bg-gradient-gold rounded-full opacity-20 blur-md -z-10"></div>
+									<div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+										{getTierName(playerStats.cultivation_tier || 1)}
+									</div>
 								</div>
-								{/* Action Buttons */}
-								<button
-									onClick={() => setShowCharacterSheet(true)}
-									className="btn-gold"
-								>
+								{/* Cultivation Tier Badge */}
+								<div className="badge badge-gold" style={{ 
+									width: '48px', 
+									height: '48px', 
+									fontSize: '1.25rem',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									borderRadius: '50%',
+									fontWeight: 700
+								}}>
+									{playerStats.cultivation_tier || 1}
+								</div>
+								{/* Header Buttons */}
+								<button onClick={() => setShowCharacterSheet(true)} className="btn btn-secondary btn-sm">
 									📜 Ficha
 								</button>
-								<button
-									onClick={() => setShowQuestLog(true)}
-									className="btn-action"
-								>
+								<button onClick={() => setShowQuestLog(true)} className="btn btn-ghost btn-sm">
 									🎯 Missões
 								</button>
 							</div>
@@ -159,45 +235,30 @@ export default function GamePage() {
 					</div>
 				</div>
 
-				{/* === MAIN GAME AREA (3-Column Grid) === */}
-				<div className="flex-1 grid grid-cols-12 gap-6 px-6 pb-6 overflow-hidden">
+				{/* === MAIN 3-COLUMN LAYOUT === */}
+				<div className="game-main">
 					
-					{/* === LEFT SIDEBAR (Player HUD) === */}
-					<div className="col-span-3 overflow-y-auto scrollbar-xianxia space-y-4">
+					{/* === LEFT SIDEBAR (Player Stats) === */}
+					<div className="game-sidebar">
 						<PlayerHUD playerStats={playerStats} />
 
-						{/* === NPC CARDS (AAA Style with Glow on Hover) === */}
+						{/* NPC Cards */}
 						{npcsInScene.length > 0 && (
-							<div className="glass-jade p-5 rounded-2xl">
-								<h3 className="font-title text-base text-jade-glow mb-4 uppercase tracking-wider flex items-center gap-2">
+							<div className="panel">
+								<h3 className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
 									<span>👥</span> Personagens
 								</h3>
-								<div className="space-y-3">
+								<div className="flex flex-col gap-sm">
 									{npcsInScene.map((npc) => (
 										<div
 											key={npc.id}
 											onClick={() => setSelectedNpc(npc)}
-											className={`
-												p-4 rounded-xl cursor-pointer 
-												transition-all duration-300 
-												hover:scale-105 hover:shadow-mystic
-												border-2 relative overflow-hidden
-												${npc.emotional_state === 'hostile' 
-													? 'glass-demon animate-pulse-glow' 
-													: npc.emotional_state === 'friendly' 
-													? 'glass-jade' 
-													: 'glass-panel border-mist-border'
-												}
-											`}
+											className={`npc-card ${npc.emotional_state === 'hostile' ? 'hostile' : npc.emotional_state === 'friendly' ? 'friendly' : ''}`}
 										>
-											{/* Hostile Indicator Animation */}
-											{npc.emotional_state === 'hostile' && (
-												<div className="absolute -top-1 -right-1 w-3 h-3 bg-demon rounded-full animate-ping"></div>
-											)}
-											<div className="font-display text-base font-bold text-white drop-shadow-lg">{npc.name}</div>
-											<div className="font-mono text-sm text-slate-300 mt-2 flex items-center gap-3">
-												<span className="text-imperial">⚡ Tier {npc.cultivation_tier || 1}</span>
-												<span className="text-red-400">❤️ {Math.round(npc.current_hp)}</span>
+											<div className="npc-name">{npc.name}</div>
+											<div className="npc-info">
+												<span style={{ color: 'var(--purple)' }}>⚡ Tier {npc.cultivation_tier || 1}</span>
+												<span style={{ color: 'var(--demon)' }}>❤️ {Math.round(npc.current_hp)}</span>
 											</div>
 										</div>
 									))}
@@ -206,171 +267,152 @@ export default function GamePage() {
 						)}
 					</div>
 
-					{/* === CENTER PANEL (Narrative Chat - Storytelling Focus) === */}
-					<div className="col-span-6 flex flex-col glass-panel rounded-2xl overflow-hidden border-2 border-void-200/30 relative">
-						{/* Decorative Top Border */}
-						<div className="absolute top-0 left-0 right-0 h-1 bg-gradient-gold opacity-40"></div>
+					{/* === CENTER PANEL (Chat/Narrative) === */}
+					<div className="game-center">
+						{/* Decorative top border */}
+						<div style={{ 
+							height: '3px', 
+							background: 'linear-gradient(90deg, transparent 0%, var(--gold) 20%, var(--gold) 80%, transparent 100%)',
+							opacity: 0.5
+						}} />
 
-						{/* === MESSAGE AREA (Scrollable Narrative Log) === */}
-						<div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-xianxia">
-							{messages.map((msg, idx) => (
-								<div
-									key={idx}
-									className={`
-										${msg.type === 'player' 
-											? 'ml-auto max-w-2xl glass-panel p-5 rounded-2xl border-l-4 border-imperial' 
-											: msg.type === 'narrator' 
-											? 'glass-gold p-6 rounded-2xl border-ornate-gold' 
-											: msg.type === 'action' 
-											? 'glass-jade p-5 rounded-2xl border-l-4 border-jade' 
-											: msg.type === 'error' 
-											? 'glass-demon p-5 rounded-2xl border-l-4 border-demon' 
-											: 'glass-panel p-5 rounded-2xl border-mist-border'
-										}
-										transition-all duration-300 hover:scale-[1.01]
-									`}
-								>
-									{msg.type === 'narrator' ? (
-										<div className="prose prose-invert max-w-none">
-											{msg.text.split('\n\n').map((paragraph, pIdx) => (
-												<p 
-													key={pIdx} 
-													className="
-														mb-4 leading-relaxed text-lg font-body text-slate-100
-														first-letter:text-4xl first-letter:text-gold-glow 
-														first-letter:font-title first-letter:float-left 
-														first-letter:mr-2 first-letter:leading-none
-													"
-												>
-													{paragraph}
-												</p>
-											))}
+						{/* === MESSAGE AREA === */}
+						<div className="chat-area">
+							{messages.map((msg, idx) => {
+								// Narrator message
+								if (msg.type === 'narrator') {
+									return (
+										<div key={idx} className="chat-narrator">
+											<div className="chat-narrator-label">
+												<span>📜 Cronista do Crepúsculo</span>
+											</div>
+											<div className="chat-narrator-text">
+												{msg.text.split('\n\n').map((paragraph, pIdx) => (
+													<p key={pIdx}>{paragraph}</p>
+												))}
+											</div>
 										</div>
-									) : (
-										<div className="text-lg leading-relaxed font-body text-slate-200">
-											{msg.text}
+									);
+								}
+								
+								// Player message
+								if (msg.type === 'player') {
+									return (
+										<div key={idx} className="chat-player">
+											<div className="chat-player-label">
+												🗣️ {playerStats?.name || 'Jogador'}
+											</div>
+											<div className="chat-player-text">{msg.text}</div>
 										</div>
-									)}
-								</div>
-							))}
+									);
+								}
+								
+								// Action result
+								if (msg.type === 'action') {
+									return (
+										<div key={idx} className="chat-action">
+											<div className="chat-action-label">⚡ Resultado da Ação</div>
+											<div className="chat-action-text">{msg.text}</div>
+										</div>
+									);
+								}
+								
+								// Error
+								if (msg.type === 'error') {
+									return (
+										<div key={idx} className="chat-error">
+											<div className="chat-error-text">{msg.text}</div>
+										</div>
+									);
+								}
+								
+								// System / Default
+								return (
+									<div key={idx} className="chat-system">
+										<div className="chat-system-text">{msg.text}</div>
+									</div>
+								);
+							})}
+							
+							{/* Loading indicator */}
 							{isLoading && (
-								<div className="flex items-center gap-4 text-jade font-body text-lg glass-panel p-4 rounded-xl w-fit">
-									<div className="w-6 h-6 border-4 border-jade/20 border-t-jade rounded-full animate-spin"></div>
-									<span className="text-jade-glow">A história se desenrola...</span>
+								<div className="chat-system" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--spacing-md)' }}>
+									<div className="loading-spinner-small"></div>
+									<span className="chat-system-text">O Cronista do Crepúsculo medita sobre o destino...</span>
 								</div>
 							)}
 							<div ref={messagesEndRef} />
 						</div>
 
-						{/* === INPUT AREA (Epic Text Input) === */}
+						{/* === INPUT AREA === */}
 						<DialogueInput onSend={handleSend} isLoading={isLoading} />
 					</div>
 
-					{/* === RIGHT SIDEBAR (Combat Skills & Actions) === */}
-					<div className="col-span-3 space-y-4 overflow-y-auto scrollbar-xianxia">
+					{/* === RIGHT SIDEBAR (Combat & Actions) === */}
+					<div className="game-sidebar">
 						
-						{/* === COMBAT SKILLS (Epic Button Grid) === */}
+						{/* Combat Skills */}
 						<CombatInterface 
 							skills={playerSkills} 
 							onSkillClick={handleAttack}
 							isLoading={isLoading}
 						/>
 
-						{/* === QUICK ACTIONS (Contextual Buttons) === */}
-						<div className="glass-panel p-5 rounded-2xl border border-imperial/20 relative overflow-hidden">
-							<div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-50"></div>
-							<h3 className="font-title text-base text-gold-glow mb-4 uppercase tracking-wider flex items-center gap-2">
-								⚡ Ações Rápidas
+						{/* Quick Actions */}
+						<div className="panel">
+							<h3 className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+								<span>⚡</span> Ações Rápidas
 							</h3>
-							<div className="space-y-3">
+							<div className="flex flex-col gap-sm">
 								<button
 									onClick={() => handleSend('olhar ao redor')}
 									disabled={isLoading}
-									className="
-										w-full px-5 py-4 
-										bg-gradient-void hover:bg-gradient-to-r hover:from-void-200 hover:to-void-100
-										border border-mist-border hover:border-mist-glow
-										rounded-xl text-base font-body text-slate-200
-										transition-all duration-300 hover:scale-105 hover:shadow-mystic
-										disabled:opacity-40 disabled:cursor-not-allowed
-										flex items-center gap-3
-									"
+									className="action-btn"
 								>
-									<span className="text-2xl">👁️</span>
-									<span className="font-semibold">Observar Entorno</span>
+									<span className="icon">👁️</span>
+									<span>Observar Entorno</span>
 								</button>
 								<button
 									onClick={() => handleSend('meditar e cultivar')}
 									disabled={isLoading}
-									className="
-										w-full px-5 py-4 
-										bg-gradient-to-r from-purple-900/50 to-violet-900/50 
-										hover:from-purple-800 hover:to-violet-800
-										border border-purple-500/30 hover:border-purple-400
-										rounded-xl text-base font-body text-slate-200
-										transition-all duration-300 hover:scale-105 hover:shadow-glow-purple
-										disabled:opacity-40 disabled:cursor-not-allowed
-										flex items-center gap-3
-									"
+									className="action-btn"
+									style={{ borderColor: 'var(--purple)' }}
 								>
-									<span className="text-2xl">🧘</span>
-									<span className="font-semibold">Meditar</span>
+									<span className="icon">🧘</span>
+									<span>Meditar</span>
 								</button>
 								<button
 									onClick={() => handleSend('procurar por recursos')}
 									disabled={isLoading}
-									className="
-										w-full px-5 py-4 
-										bg-gradient-jade hover:shadow-glow-jade
-										border border-jade/30 hover:border-jade
-										rounded-xl text-base font-body text-void font-bold
-										transition-all duration-300 hover:scale-105
-										disabled:opacity-40 disabled:cursor-not-allowed
-										flex items-center gap-3
-									"
+									className="action-btn"
+									style={{ borderColor: 'var(--jade)' }}
 								>
-									<span className="text-2xl">🔍</span>
+									<span className="icon">🔍</span>
 									<span>Buscar Recursos</span>
 								</button>
 								<button
 									onClick={() => handleSend('descansar e recuperar energia')}
 									disabled={isLoading}
-									className="
-										w-full px-5 py-4 
-										bg-gradient-to-r from-cyan-900/50 to-blue-900/50 
-										hover:from-cyan-800 hover:to-blue-800
-										border border-cyan-500/30 hover:border-cyan-400
-										rounded-xl text-base font-body text-slate-200
-										transition-all duration-300 hover:scale-105
-										disabled:opacity-40 disabled:cursor-not-allowed
-										flex items-center gap-3
-									"
+									className="action-btn"
 								>
-									<span className="text-2xl">💤</span>
-									<span className="font-semibold">Descansar</span>
+									<span className="icon">💤</span>
+									<span>Descansar</span>
 								</button>
 							</div>
 						</div>
 
-						{/* === COMBAT STATUS (Warning Indicator) === */}
+						{/* Combat Status Alert */}
 						{inCombat && (
-							<div className="glass-demon p-6 rounded-2xl border-2 border-demon animate-pulse-glow relative overflow-hidden">
-								<div className="absolute inset-0 bg-gradient-demon opacity-10 animate-pulse"></div>
-								<div className="text-center relative z-10">
-									<div className="text-5xl mb-4 animate-bounce drop-shadow-lg">⚔️</div>
-									<div className="font-title text-xl font-bold text-demon-100 tracking-wider uppercase">
-										Batalha!
-									</div>
-									<div className="font-body text-sm text-slate-300 mt-3">
-										Escolha uma técnica para atacar
-									</div>
-								</div>
+							<div className="combat-alert">
+								<div className="icon">⚔️</div>
+								<div className="title">Batalha!</div>
+								<div className="subtitle">Escolha uma técnica para atacar</div>
 							</div>
 						)}
 					</div>
 				</div>
 
-				{/* NpcInspector Component */}
+				{/* === MODALS === */}
 				{selectedNpc && (
 					<NpcInspector 
 						npc={selectedNpc} 
@@ -378,7 +420,6 @@ export default function GamePage() {
 					/>
 				)}
 				
-				{/* [SPRINT 5] Character Sheet Modal */}
 				{showCharacterSheet && (
 					<CharacterSheet 
 						playerId={playerId} 
@@ -386,7 +427,6 @@ export default function GamePage() {
 					/>
 				)}
 
-				{/* [SPRINT 6] Quest Log Modal */}
 				{showQuestLog && (
 					<QuestLog
 						playerId={playerId}

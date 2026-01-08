@@ -262,6 +262,40 @@
     "effects": [],
     "is_silent_art": false,
     "tier_requirement": 1
+  },
+  {
+    "skill_id": "basic_attack",
+    "name": "Ataque Básico",
+    "description": "Um golpe simples usando sua força física e arma equipada.",
+    "base_damage": 25,
+    "cost_type": "none",
+    "cost_amount": 0,
+    "cooldown": 0,
+    "range": "melee",
+    "element": "physical",
+    "effects": [],
+    "is_silent_art": false,
+    "tier_requirement": 1
+  },
+  {
+    "skill_id": "silent_strike",
+    "name": "Golpe Silencioso",
+    "description": "Um ataque furtivo que não emite Qi, passando despercebido por sensores espirituais.",
+    "base_damage": 35,
+    "cost_type": "shadow_chi",
+    "cost_amount": 15,
+    "cooldown": 1,
+    "range": "melee",
+    "element": "shadow",
+    "effects": [
+      {
+        "type": "stealth_bonus",
+        "value": 1.5,
+        "description": "50% de dano bonus se não detectado"
+      }
+    ],
+    "is_silent_art": true,
+    "tier_requirement": 1
   }
 ]
 

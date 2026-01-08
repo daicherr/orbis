@@ -64,7 +64,7 @@ class Strategist:
         if villain.current_hp < villain.max_hp * 0.3:
             action["type"] = "retreat"
             action["destination"] = self._find_safe_location(villain)
-            print(f"🏃 Strategist: {villain.name} está fugindo para {action['destination']}!")
+            print(f"[RUN] Strategist: {villain.name} esta fugindo para {action['destination']}!")
             return action
         
         # 2. HUNT se tem vendetta
@@ -78,13 +78,13 @@ class Strategist:
             if villain.current_location != player_location:
                 # Mover em direção ao jogador
                 action["destination"] = self._get_next_step(villain.current_location, player_location)
-                print(f"🎯 Strategist: {villain.name} está caçando {player.name}. Movendo para {action['destination']}.")
+                print(f"[HUNT] Strategist: {villain.name} esta cacando {player.name}. Movendo para {action['destination']}.")
             else:
                 # Já está no mesmo local - preparar emboscada
                 action["type"] = "ambush"
                 action["wait_turns"] = random.randint(1, 3)  # Esperar 1-3 turnos
                 self._plan_ambush(villain, player)
-                print(f"⚔️ Strategist: {villain.name} está preparando uma emboscada em {villain.current_location}!")
+                print(f"[AMBUSH] Strategist: {villain.name} esta preparando uma emboscada em {villain.current_location}!")
             
             return action
         
@@ -92,11 +92,11 @@ class Strategist:
         if villain.emotional_state == "hostile":
             action["type"] = "patrol"
             action["destination"] = self._get_random_neighbor(villain.current_location)
-            print(f"👁️ Strategist: {villain.name} está patrulhando {action['destination']}.")
+            print(f"[PATROL] Strategist: {villain.name} esta patrulhando {action['destination']}.")
             return action
         
         # 4. IDLE caso padrão
-        print(f"💤 Strategist: {villain.name} está idle em {villain.current_location}.")
+        print(f"[IDLE] Strategist: {villain.name} esta idle em {villain.current_location}.")
         return action
 
     def _get_next_step(self, from_location: str, to_location: str) -> str:

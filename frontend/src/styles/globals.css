@@ -12,11 +12,11 @@
 @layer base {
   body {
     @apply text-slate-200 font-body antialiased;
-    background: #0f0c29;
+    background: #1a1a3e;
     background-image: 
-      radial-gradient(ellipse at 20% 30%, rgba(48, 43, 99, 0.4) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 70%, rgba(36, 36, 62, 0.3) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(15, 12, 41, 0.8) 0%, #000000 100%);
+      radial-gradient(ellipse at 20% 30%, rgba(88, 83, 139, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(66, 66, 102, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(35, 32, 71, 0.7) 0%, #0f0c29 100%);
     background-attachment: fixed;
     background-size: cover;
     overflow: hidden;
@@ -63,37 +63,51 @@
 
   /* ===== GLASSMORPHISM PANELS ===== */
   .glass-panel {
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(30, 40, 65, 0.85);
     backdrop-filter: blur(32px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 
       0 8px 32px 0 rgba(0, 0, 0, 0.6),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
 
   .glass-gold {
     @apply glass-panel;
-    border-top: 2px solid rgba(212, 175, 55, 0.5);
+    background: rgba(40, 35, 60, 0.9);
+    border: 2px solid rgba(212, 175, 55, 0.6);
     box-shadow: 
       0 8px 32px 0 rgba(0, 0, 0, 0.6),
-      0 0 25px 0 rgba(212, 175, 55, 0.15),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+      0 0 30px 0 rgba(212, 175, 55, 0.25),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
 
   .glass-jade {
     @apply glass-panel;
-    border-left: 2px solid rgba(0, 176, 155, 0.5);
+    border: 2px solid rgba(0, 176, 155, 0.6);
     box-shadow: 
       0 8px 32px 0 rgba(0, 0, 0, 0.6),
-      0 0 20px 0 rgba(0, 176, 155, 0.2);
+      0 0 25px 0 rgba(0, 176, 155, 0.25);
   }
 
   .glass-demon {
     @apply glass-panel;
-    border: 1px solid rgba(203, 45, 62, 0.4);
+    border: 2px solid rgba(203, 45, 62, 0.6);
     box-shadow: 
       0 8px 32px 0 rgba(0, 0, 0, 0.6),
       0 0 30px 0 rgba(203, 45, 62, 0.3);
+  }
+
+  /* ===== BORDAS ESPECÍFICAS ===== */
+  .border-gold {
+    border: 2px solid rgba(212, 175, 55, 0.6) !important;
+  }
+
+  .border-jade {
+    border: 2px solid rgba(0, 176, 155, 0.6) !important;
+  }
+
+  .border-demon {
+    border: 2px solid rgba(203, 45, 62, 0.6) !important;
   }
 
   /* ===== ORNATE BORDERS (Asian Fantasy Style) ===== */
@@ -123,13 +137,20 @@
   /* ===== GLOW TEXT EFFECTS ===== */
   .text-gold-glow {
     @apply bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent;
-    filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.8));
     font-weight: 700;
   }
 
   .text-jade-glow {
-    @apply bg-gradient-to-r from-emerald-400 to-lime-400 bg-clip-text text-transparent;
-    filter: drop-shadow(0 0 8px rgba(0, 176, 155, 0.6));
+    @apply bg-gradient-to-r from-emerald-300 to-lime-300 bg-clip-text text-transparent;
+    filter: drop-shadow(0 0 10px rgba(0, 176, 155, 0.8));
+    font-weight: 600;
+  }
+
+  .text-demon-glow {
+    @apply bg-gradient-to-r from-red-300 to-pink-300 bg-clip-text text-transparent;
+    filter: drop-shadow(0 0 10px rgba(203, 45, 62, 0.8));
+    font-weight: 600;
   }
 
   .text-mystic-glow {
@@ -167,18 +188,52 @@
 
   .btn-gold {
     @apply bg-gradient-gold hover:shadow-glow-gold;
-    @apply text-void-DEFAULT font-bold;
-    @apply border border-imperial-100/40;
+    @apply text-gray-900 font-bold;
+    @apply border-2 border-amber-400;
     @apply active:scale-95 transition-all duration-200;
     @apply rounded-lg px-6 py-3;
+    @apply shadow-lg;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .btn-gold:hover {
+    @apply brightness-110;
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    @apply bg-gradient-to-r from-amber-600/30 to-yellow-600/30;
+    @apply hover:from-amber-500/40 hover:to-yellow-500/40;
+    @apply text-amber-100 font-bold;
+    @apply border-2 border-amber-500/50;
+    @apply hover:border-amber-400;
+    @apply active:scale-95 transition-all duration-200;
+    @apply rounded-lg px-6 py-3;
+    @apply shadow-lg shadow-amber-500/20;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .btn-secondary:hover {
+    @apply shadow-glow-gold;
+    transform: translateY(-2px);
   }
 
   .btn-demon {
     @apply bg-gradient-demon hover:shadow-glow-demon;
     @apply text-white font-bold;
-    @apply border border-demon-100/40;
+    @apply border-2 border-red-400;
     @apply active:scale-95 transition-all duration-200;
     @apply rounded-lg px-6 py-3;
+    @apply shadow-lg;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .btn-demon:hover {
+    @apply brightness-110;
+    transform: translateY(-2px);
   }
 
   /* ===== CUSTOM SCROLLBAR ===== */
@@ -308,6 +363,246 @@
   .combat-log-entry.system {
     border-left-color: #d4af37;
     background: rgba(212, 175, 55, 0.1);
+  }
+
+  /* =============================================
+     CHAT MESSAGE STYLES - CÓDICE TRILUNA
+     ============================================= */
+
+  /* === NARRADOR (MESTRE) - Estilo Épico === */
+  .chat-narrator {
+    background: linear-gradient(135deg, rgba(35, 30, 55, 0.95) 0%, rgba(45, 35, 65, 0.9) 100%);
+    border: 2px solid rgba(212, 175, 55, 0.5);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      0 0 40px rgba(212, 175, 55, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .chat-narrator::before {
+    content: '📜';
+    position: absolute;
+    top: -8px;
+    left: 20px;
+    font-size: 1.5rem;
+    background: rgba(35, 30, 55, 1);
+    padding: 0 0.5rem;
+    border-radius: 50%;
+  }
+
+  .chat-narrator::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(212, 175, 55, 0.8) 20%, 
+      rgba(212, 175, 55, 0.8) 80%, 
+      transparent 100%);
+  }
+
+  .chat-narrator-label {
+    @apply font-title text-xs uppercase tracking-widest mb-3;
+    color: rgba(212, 175, 55, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .chat-narrator-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.5), transparent);
+  }
+
+  .chat-narrator-text {
+    @apply font-body text-lg leading-relaxed;
+    color: #e8e4dc;
+  }
+
+  .chat-narrator-text p {
+    margin-bottom: 1rem;
+  }
+
+  .chat-narrator-text p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Primeira letra decorada */
+  .chat-narrator-text p:first-of-type::first-letter {
+    @apply font-title text-4xl float-left mr-2;
+    color: rgba(212, 175, 55, 0.9);
+    line-height: 1;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  }
+
+  /* === JOGADOR - Balão de Diálogo Moderno === */
+  .chat-player {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.25) 0%, rgba(99, 102, 241, 0.2) 100%);
+    border: 2px solid rgba(129, 140, 248, 0.5);
+    border-radius: 1rem 1rem 0.25rem 1rem;
+    padding: 1rem 1.25rem;
+    margin-left: auto;
+    max-width: 80%;
+    position: relative;
+    box-shadow: 
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(129, 140, 248, 0.1);
+  }
+
+  .chat-player::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -8px;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+    border-left-color: rgba(129, 140, 248, 0.5);
+    border-bottom-color: rgba(129, 140, 248, 0.5);
+  }
+
+  .chat-player-label {
+    @apply font-display text-xs uppercase tracking-wider mb-2;
+    color: rgba(129, 140, 248, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .chat-player-text {
+    @apply font-body text-base;
+    color: #e0e7ff;
+  }
+
+  /* === AÇÃO/RESULTADO - Feedback Mecânico === */
+  .chat-action {
+    background: linear-gradient(135deg, rgba(0, 100, 80, 0.2) 0%, rgba(0, 176, 155, 0.15) 100%);
+    border: 1px solid rgba(0, 176, 155, 0.4);
+    border-left: 4px solid rgba(0, 176, 155, 0.8);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    position: relative;
+  }
+
+  .chat-action::before {
+    content: '⚡';
+    position: absolute;
+    top: 50%;
+    left: -1.5rem;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    background: rgba(20, 30, 45, 1);
+    padding: 0.25rem;
+    border-radius: 50%;
+  }
+
+  .chat-action-label {
+    @apply font-mono text-xs uppercase tracking-wider mb-2;
+    color: rgba(0, 176, 155, 0.9);
+  }
+
+  .chat-action-text {
+    @apply font-mono text-sm;
+    color: rgba(0, 220, 190, 0.9);
+  }
+
+  /* === ERRO - Alerta Vermelho === */
+  .chat-error {
+    background: linear-gradient(135deg, rgba(120, 30, 40, 0.3) 0%, rgba(180, 40, 50, 0.2) 100%);
+    border: 1px solid rgba(220, 60, 70, 0.5);
+    border-left: 4px solid rgba(220, 60, 70, 0.9);
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+
+  .chat-error-text {
+    @apply font-body text-sm;
+    color: rgba(255, 180, 180, 0.95);
+  }
+
+  /* === SISTEMA - Notificação Neutra === */
+  .chat-system {
+    background: rgba(50, 55, 70, 0.5);
+    border: 1px solid rgba(120, 130, 150, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    text-align: center;
+  }
+
+  .chat-system-text {
+    @apply font-body text-sm italic;
+    color: rgba(180, 190, 210, 0.9);
+  }
+
+  /* === ANIMAÇÕES DE ENTRADA === */
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .chat-narrator {
+    animation: slideInLeft 0.4s ease-out;
+  }
+
+  .chat-player {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .chat-action,
+  .chat-error,
+  .chat-system {
+    animation: fadeInUp 0.3s ease-out;
+  }
+
+  /* === HOVER EFFECTS === */
+  .chat-narrator:hover {
+    box-shadow: 
+      0 12px 40px rgba(0, 0, 0, 0.6),
+      0 0 50px rgba(212, 175, 55, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .chat-player:hover {
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.4),
+      0 0 25px rgba(129, 140, 248, 0.15);
   }
 }
 

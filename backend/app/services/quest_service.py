@@ -1,6 +1,7 @@
 """
 Quest Service - Dynamic Quest System
 Gera missões baseadas em origin_location, cultivation_tier e eventos do mundo (Sprint 6)
+Atualizado Sprint 12: Integração com QuestGenerator (IA)
 """
 
 from typing import Optional, List, Dict, Any
@@ -9,9 +10,10 @@ from app.core.chronos import world_clock
 import random
 
 class QuestService:
-    """Sistema de missões dinâmicas [SPRINT 6]"""
+    """Sistema de missões dinâmicas [SPRINT 6 + 12]"""
     
     def __init__(self):
+        # Templates de fallback (usados quando IA não disponível)
         self.quest_templates = {
             "Vila Crisântemos": [{
                 "type": "hunt", "title": "Caça aos Javalis Selvagens",
@@ -25,6 +27,49 @@ class QuestService:
             }]
         }
         self.active_quests: Dict[int, List[Dict[str, Any]]] = {}
+        self._quest_generator = None  # Lazy init para evitar import circular
+    
+    def _get_quest_generator(self):
+        """Lazy initialization do quest generator."""
+        if self._quest_generator is None:
+            try:
+                from app.agents.quest_generator import QuestGenerator
+                from app.services.gemini_client import GeminiClient
+                gemini = GeminiClient()
+                self._quest_generator = QuestGenerator(gemini)
+            except Exception as e:
+                print(f"[QUEST] Não foi possível inicializar QuestGenerator: {e}")
+                return None
+        return self._quest_generator
+    
+    async def generate_quest_ai(
+        self, 
+        player: Player, 
+        recent_events: List[str] = None,
+        nearby_npcs: List[str] = None,
+        world_context: str = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Gera quest via IA (Sprint 12).
+        Falls back para template se IA não disponível.
+        """
+        generator = self._get_quest_generator()
+        if generator:
+            try:
+                quest = await generator.generate_quest_async(
+                    player=player,
+                    location=player.current_location or player.origin_location,
+                    recent_events=recent_events,
+                    nearby_npcs=nearby_npcs,
+                    world_context=world_context
+                )
+                if quest:
+                    return quest
+            except Exception as e:
+                print(f"[QUEST] Erro na geração IA: {e}")
+        
+        # Fallback para template
+        return self.generate_quest(player)
     
     def generate_quest(self, player: Player) -> Optional[Dict[str, Any]]:
         """Gera quest baseada no player."""
@@ -70,7 +115,7 @@ class QuestService:
         if player_id not in self.active_quests:
             self.active_quests[player_id] = []
         self.active_quests[player_id].append(quest)
-        print(f"📜 Quest adicionada: '{quest['title']}'")
+        print(f"[QUEST] Quest adicionada: '{quest['title']}'")
     
     def get_active_quests(self, player_id: int) -> List[Dict[str, Any]]:
         """Retorna quests ativas."""
@@ -84,9 +129,9 @@ class QuestService:
                 quest["current_progress"] += progress_increment
                 if quest["current_progress"] >= quest["required_progress"]:
                     quest["status"] = "completed"
-                    print(f"✅ Quest Completa: '{quest['title']}'!")
+                    print(f"[OK] Quest Completa: '{quest['title']}'!")
                     return quest
-                print(f"📊 Progresso: {quest['current_progress']}/{quest['required_progress']}")
+                print(f"[PROGRESS] Progresso: {quest['current_progress']}/{quest['required_progress']}")
         return None
     
     def check_deadlines(self, player_id: int) -> List[Dict[str, Any]]:
@@ -98,13 +143,13 @@ class QuestService:
             if quest["status"] == "active" and current_turn > quest["deadline_turn"]:
                 quest["status"] = "failed"
                 failed_quests.append(quest)
-                print(f"❌ Quest Falhou: '{quest['title']}'")
+                print(f"[FAIL] Quest Falhou: '{quest['title']}'")
         return failed_quests
     
     def complete_quest(self, player: Player, quest: Dict[str, Any]):
         """Aplica recompensas."""
         player.xp += quest["reward_xp"]
         player.gold += quest["reward_gold"]
-        print(f"🎉 QUEST COMPLETA: {quest['title']} (+{quest['reward_xp']} XP, +{quest['reward_gold']} Gold)")
+        print(f"[COMPLETE] QUEST COMPLETA: {quest['title']} (+{quest['reward_xp']} XP, +{quest['reward_gold']} Gold)")
 
 quest_service = QuestService()

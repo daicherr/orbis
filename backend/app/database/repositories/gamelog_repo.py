@@ -38,7 +38,14 @@ class GameLogRepository:
         if self.embedding_service:
             # Combine context for better search
             context = f"{location}. {scene_description}"
-            embedding = await self.embedding_service.generate_embedding(context)
+            raw_embedding = self.embedding_service.generate_embedding(context)  # NOT async
+            
+            # Reduzir para 128 dimensões (compatível com Vector(128) no DB)
+            if len(raw_embedding) > 128:
+                embedding = raw_embedding[:128]
+            else:
+                # Pad com zeros se for menor
+                embedding = raw_embedding + [0.0] * (128 - len(raw_embedding))
         
         log = GameLog(
             player_id=player_id,

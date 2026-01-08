@@ -1,0 +1,82 @@
+[
+  {
+    "id": "lobo_de_presas_de_cobre",
+    "name": "Lobo de Presas de Cobre",
+    "description": "Um lobo selvagem de pelagem cinza-metálica, cujas presas brilham com um tom acobreado após absorverem a essência mineral da terra. Sua aura é instintiva e agressiva, típica de feras que deram os primeiros passos no refinamento corporal.",
+    "stats": {
+      "hp": 120,
+      "defense": 15,
+      "rank": 1
+    }
+  },
+  {
+    "id": "lobo_das_sombras_farfalhantes",
+    "name": "Lobo das Sombras Farfalhantes",
+    "description": "Um canídeo de pelagem cinzenta e olhos amarelados que parecem fundir-se com a penumbra da floresta. O ar ao seu redor vibra levemente com um Qi instável, denunciando sua natureza de besta aprimorada.",
+    "stats": {
+      "hp": 85,
+      "defense": 12,
+      "rank": 1
+    }
+  },
+  {
+    "id": "lobo_de_pelagem_de_ferro",
+    "name": "Lobo de Pelagem de Ferro",
+    "description": "Um canídeo de grande porte cujos pelos possuem um brilho metálico e são rígidos como agulhas. Sua aura é puramente instintiva, marcada pelo início da absorção de Qi mundano que fortalece sua carapaça natural.",
+    "stats": {
+      "hp": 120,
+      "defense": 45,
+      "rank": 1
+    }
+  },
+  {
+    "id": "lince_das_sombras_de_bambu",
+    "name": "Lince das Sombras de Bambu",
+    "description": "Um felino ágil cujos pelos parecem absorver a luz ambiente, movendo-se silenciosamente entre a vegetação rasteira com olhos que brilham em um tom etéreo de jade.",
+    "stats": {
+      "hp": 85,
+      "defense": 12,
+      "rank": 1
+    }
+  },
+  {
+    "id": "javali_de_presas_de_cobre",
+    "name": "Javali de Presas de Cobre",
+    "description": "Um javali de proporções massivas com pelagem rígida como cerdas de ferro e um par de presas que brilham com um lustre metálico acobreado, indicando o início de sua absorção de Qi mundano.",
+    "stats": {
+      "hp": 150,
+      "defense": 20,
+      "rank": 1
+    }
+  },
+  {
+    "id": "javali_do_chifre_de_obsidiana",
+    "name": "Javali do Chifre de Obsidiana",
+    "description": "Um javali massivo com cerdas endurecidas por minerais e um chifre negro que pulsa com uma leve energia telúrica. Sua presença exala uma agressividade bruta e territorial, típica de feras que começaram a absorver o Qi da terra.",
+    "stats": {
+      "hp": 150,
+      "defense": 30,
+      "rank": 1
+    }
+  },
+  {
+    "id": "javali_das_costas_de_ferro",
+    "name": "Javali das Costas de Ferro",
+    "description": "Um javali massivo cujos pelos ao longo da espinha se fundiram com depósitos minerais através da absorção latente de Qi terrestre. Seus olhos brilham com uma fúria instintiva e sua carga é capaz de estilhaçar rochas e derrubar árvores jovens.",
+    "stats": {
+      "hp": 150,
+      "defense": 25,
+      "rank": 1
+    }
+  },
+  {
+    "id": "javali_de_casca_rochosa",
+    "name": "Javali de Casca Rochosa",
+    "description": "Um javali massivo cujas cerdas foram substituídas por placas de xisto endurecido pelo Qi da terra. Seus olhos brilham com um amarelo opaco e ele exala um odor de solo úmido e minerais.",
+    "stats": {
+      "hp": 150,
+      "defense": 25,
+      "rank": 1
+    }
+  }
+]

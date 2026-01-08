@@ -74,9 +74,14 @@ export default function CharacterCreationWizard({ onComplete }) {
         body: JSON.stringify({
           name: characterData.name,
           constitution: characterData.constitution,
-          origin: characterData.origin_location
+          origin_location: characterData.origin_location
         })
       });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao buscar Session Zero');
+      }
+      
       const data = await response.json();
       setSessionZeroQuestions(data.questions || []);
     } catch (error) {
@@ -106,16 +111,16 @@ export default function CharacterCreationWizard({ onComplete }) {
   const handleFinalSubmit = async (answers) => {
     setLoading(true);
     
-    // Compilar backstory das respostas
-    const backstory = sessionZeroQuestions
-      .map((q, i) => `${q}\n${answers[i]}`)
-      .join('\n\n');
-    
+    // Enviar apenas os campos que o backend espera
     const finalData = {
-      ...characterData,
-      backstory,
+      name: characterData.name,
+      appearance: characterData.appearance,
+      constitution: characterData.constitution,
+      origin_location: characterData.origin_location,
       session_zero_answers: answers
     };
+    
+    console.log('📤 Enviando para backend:', finalData);
     
     try {
       const response = await fetch('http://localhost:8000/player/create-full', {
@@ -124,44 +129,54 @@ export default function CharacterCreationWizard({ onComplete }) {
         body: JSON.stringify(finalData)
       });
       
+      console.log('📥 Status da resposta:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Erro do backend:', errorData);
+        throw new Error(JSON.stringify(errorData.detail || errorData));
+      }
+      
       const player = await response.json();
+      console.log('✅ Personagem criado:', player);
       onComplete(player);
     } catch (error) {
-      console.error('Erro ao criar personagem:', error);
-      alert('Erro ao criar personagem. Tente novamente.');
+      console.error('❌ Erro ao criar personagem:', error);
+      alert(`Erro ao criar personagem:\n${error.message}`);
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const renderStep1 = () => (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-lg">
       <div>
-        <h2 className="text-2xl font-bold text-gold mb-2">Nome do Cultivador</h2>
-        <p className="text-secondary mb-4">Escolha um nome digno de uma lenda</p>
+        <h2 className="glow-gold" style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>Nome do Cultivador</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>Escolha um nome digno de uma lenda</p>
         <input
           type="text"
           value={characterData.name}
           onChange={(e) => setCharacterData({ ...characterData, name: e.target.value })}
           placeholder="Ex: Zhang Wei, Lin Feng, Xiao Yan..."
-          className="w-full bg-black/50 border-2 border-gold/30 rounded-lg px-4 py-3 text-white focus:border-gold outline-none"
+          className="input"
+          style={{ fontSize: '1rem' }}
         />
       </div>
       
       <div>
-        <h3 className="text-lg font-bold text-gold mb-2">Aparência (Opcional)</h3>
+        <h3 className="glow-gold" style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-sm)' }}>Aparência (Opcional)</h3>
         <textarea
           value={characterData.appearance}
           onChange={(e) => setCharacterData({ ...characterData, appearance: e.target.value })}
           placeholder="Descreva a aparência do seu personagem..."
-          className="w-full bg-black/50 border-2 border-gold/30 rounded-lg px-4 py-3 text-white focus:border-gold outline-none h-24 resize-none"
+          className="input"
+          style={{ minHeight: '100px' }}
         />
       </div>
       
       <button
         onClick={handleNext}
         disabled={!characterData.name}
-        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 rounded-lg transition-all"
+        className="btn btn-primary btn-lg btn-block"
       >
         Continuar →
       </button>
@@ -169,46 +184,43 @@ export default function CharacterCreationWizard({ onComplete }) {
   );
 
   const renderStep2 = () => (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-lg">
       <div>
-        <h2 className="text-2xl font-bold text-gold mb-2">Constituição</h2>
-        <p className="text-secondary mb-4">Escolha o tipo de corpo que define seu destino</p>
+        <h2 className="glow-gold" style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>Constituição</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>Escolha o tipo de corpo que define seu destino</p>
       </div>
       
-      <div className="grid grid-cols-1 gap-4">
+      <div className="flex flex-col gap-md">
         {constitutions.map((const_type) => (
           <div
             key={const_type.id}
             onClick={() => setCharacterData({ ...characterData, constitution: const_type.id })}
-            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-              characterData.constitution === const_type.id
-                ? 'border-gold bg-gradient-to-br ' + const_type.color + ' bg-opacity-20'
-                : 'border-gray-600 bg-black/30 hover:border-gold/50'
-            }`}
+            className={`card card-hover ${characterData.constitution === const_type.id ? 'card-gold' : ''}`}
+            style={{ cursor: 'pointer', transition: 'all var(--transition-base)' }}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">{const_type.icon}</span>
+            <div className="flex items-center gap-md" style={{ marginBottom: 'var(--spacing-sm)' }}>
+              <span style={{ fontSize: '2rem' }}>{const_type.icon}</span>
               <div>
-                <h3 className="text-lg font-bold text-gold">{const_type.name}</h3>
-                <span className="text-xs text-secondary">{const_type.tier}</span>
+                <h3 className="glow-gold" style={{ fontSize: '1.25rem' }}>{const_type.name}</h3>
+                <span className="badge badge-gold">{const_type.tier}</span>
               </div>
             </div>
-            <p className="text-sm text-gray-300 mb-3">{const_type.description}</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>{const_type.description}</p>
             
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-sm" style={{ fontSize: '0.75rem' }}>
               <div>
-                <p className="text-green-400 font-bold mb-1">Vantagens:</p>
-                <ul className="space-y-1">
+                <p style={{ color: 'var(--jade)', fontWeight: 'bold', marginBottom: '4px' }}>Vantagens:</p>
+                <ul style={{ paddingLeft: '12px' }}>
                   {const_type.pros.map((pro, i) => (
-                    <li key={i} className="text-gray-300">• {pro}</li>
+                    <li key={i} style={{ color: 'var(--text-secondary)', marginBottom: '2px' }}>• {pro}</li>
                   ))}
                 </ul>
               </div>
               <div>
-                <p className="text-red-400 font-bold mb-1">Desvantagens:</p>
-                <ul className="space-y-1">
+                <p style={{ color: 'var(--demon)', fontWeight: 'bold', marginBottom: '4px' }}>Desvantagens:</p>
+                <ul style={{ paddingLeft: '12px' }}>
                   {const_type.cons.map((con, i) => (
-                    <li key={i} className="text-gray-300">• {con}</li>
+                    <li key={i} style={{ color: 'var(--text-secondary)', marginBottom: '2px' }}>• {con}</li>
                   ))}
                 </ul>
               </div>
@@ -217,17 +229,17 @@ export default function CharacterCreationWizard({ onComplete }) {
         ))}
       </div>
       
-      <div className="flex gap-3">
+      <div className="flex gap-md">
         <button
           onClick={() => setStep(step - 1)}
-          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all"
+          className="btn btn-ghost flex-1"
         >
           ← Voltar
         </button>
         <button
           onClick={handleNext}
           disabled={!characterData.constitution}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 rounded-lg transition-all"
+          className="btn btn-primary flex-1"
         >
           Continuar →
         </button>
@@ -236,52 +248,45 @@ export default function CharacterCreationWizard({ onComplete }) {
   );
 
   const renderStep3 = () => (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-lg">
       <div>
-        <h2 className="text-2xl font-bold text-gold mb-2">Localização Inicial</h2>
-        <p className="text-secondary mb-4">Onde sua jornada começa?</p>
+        <h2 className="glow-gold" style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>Localização Inicial</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>Onde sua jornada começa?</p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-md">
         {locations.map((loc) => (
           <div
             key={loc.id}
             onClick={() => setCharacterData({ ...characterData, origin_location: loc.id })}
-            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-              characterData.origin_location === loc.id
-                ? 'border-gold bg-gradient-to-br from-purple-900 to-blue-900 bg-opacity-50'
-                : 'border-gray-600 bg-black/30 hover:border-gold/50'
-            }`}
+            className={`card card-hover ${characterData.origin_location === loc.id ? 'card-gold' : ''}`}
+            style={{ cursor: 'pointer', transition: 'all var(--transition-base)' }}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">{loc.icon}</span>
+            <div className="flex items-center gap-md" style={{ marginBottom: 'var(--spacing-sm)' }}>
+              <span style={{ fontSize: '2rem' }}>{loc.icon}</span>
               <div>
-                <h3 className="text-lg font-bold text-gold">{loc.name}</h3>
-                <span className="text-xs text-secondary">{loc.type}</span>
+                <h3 className="glow-gold" style={{ fontSize: '1.125rem' }}>{loc.name}</h3>
+                <span className="badge badge-jade" style={{ fontSize: '0.625rem' }}>{loc.type}</span>
               </div>
             </div>
-            <p className="text-sm text-gray-300">
-              Perigo: <span className={
-                loc.danger === 'Alto' ? 'text-red-400' :
-                loc.danger === 'Médio' ? 'text-yellow-400' :
-                'text-green-400'
-              }>{loc.danger}</span>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              Perigo: <span style={{ color: loc.danger === 'Alto' ? 'var(--demon)' : loc.danger === 'Médio' ? 'var(--gold)' : 'var(--jade)' }}>{loc.danger}</span>
             </p>
           </div>
         ))}
       </div>
       
-      <div className="flex gap-3">
+      <div className="flex gap-md">
         <button
           onClick={() => setStep(step - 1)}
-          className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all"
+          className="btn btn-ghost flex-1"
         >
           ← Voltar
         </button>
         <button
           onClick={handleNext}
           disabled={!characterData.origin_location}
-          className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 rounded-lg transition-all"
+          className="btn btn-primary flex-1"
         >
           Continuar →
         </button>
@@ -294,50 +299,53 @@ export default function CharacterCreationWizard({ onComplete }) {
     const currentQuestion = sessionZeroQuestions[currentQuestionIndex];
     
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-lg">
         <div>
-          <h2 className="text-2xl font-bold text-gold mb-2">Session Zero</h2>
-          <p className="text-secondary mb-4">O Mestre deseja conhecer sua história...</p>
+          <h2 className="glow-gold" style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>Session Zero</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)' }}>O Mestre deseja conhecer sua história...</p>
         </div>
         
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin text-4xl mb-4">⚡</div>
-            <p className="text-secondary">Carregando perguntas...</p>
+          <div className="text-center" style={{ padding: 'var(--spacing-xl)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 'var(--spacing-md)', animation: 'spin 1s linear infinite' }}>⚡</div>
+            <p style={{ color: 'var(--text-secondary)' }}>Carregando perguntas...</p>
           </div>
         ) : (
           <>
-            <div className="bg-black/50 border-2 border-purple-500/30 rounded-lg p-6">
-              <p className="text-sm text-secondary mb-2">
+            <div className="panel card-jade">
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }}>
                 Pergunta {currentQuestionIndex + 1} de {sessionZeroQuestions.length}
               </p>
-              <p className="text-lg text-gold font-medium mb-4">{currentQuestion}</p>
+              <p className="glow-gold" style={{ fontSize: '1.125rem', marginBottom: 'var(--spacing-md)' }}>{currentQuestion}</p>
               
               <textarea
                 value={currentAnswer}
                 onChange={(e) => setCurrentAnswer(e.target.value)}
                 placeholder="Sua resposta..."
-                className="w-full bg-black/50 border-2 border-gold/30 rounded-lg px-4 py-3 text-white focus:border-gold outline-none h-32 resize-none"
+                className="input"
+                style={{ minHeight: '120px', marginBottom: 'var(--spacing-md)' }}
               />
               
               <button
                 onClick={handleSessionZeroAnswer}
                 disabled={!currentAnswer.trim() || loading}
-                className="mt-4 w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold py-3 rounded-lg transition-all"
+                className="btn btn-primary btn-block"
               >
                 {currentQuestionIndex < sessionZeroQuestions.length - 1 ? 'Próxima →' : '✨ Finalizar Criação'}
               </button>
             </div>
             
             {characterData.session_zero_answers.length > 0 && (
-              <div className="text-sm text-secondary">
-                <p className="mb-2">Respostas anteriores:</p>
-                {characterData.session_zero_answers.map((answer, i) => (
-                  <div key={i} className="bg-black/30 rounded p-2 mb-2">
-                    <p className="text-gold text-xs">{sessionZeroQuestions[i]}</p>
-                    <p className="text-gray-300">{answer}</p>
-                  </div>
-                ))}
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                <p style={{ marginBottom: 'var(--spacing-sm)' }}>Respostas anteriores:</p>
+                <div className="flex flex-col gap-sm">
+                  {characterData.session_zero_answers.map((answer, i) => (
+                    <div key={i} className="panel" style={{ padding: 'var(--spacing-sm)' }}>
+                      <p className="glow-gold" style={{ fontSize: '0.75rem', marginBottom: '4px' }}>{sessionZeroQuestions[i]}</p>
+                      <p style={{ color: 'var(--text-secondary)' }}>{answer}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>
@@ -346,7 +354,7 @@ export default function CharacterCreationWizard({ onComplete }) {
         <button
           onClick={() => setStep(step - 1)}
           disabled={loading}
-          className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all"
+          className="btn btn-ghost btn-block"
         >
           ← Voltar
         </button>
@@ -355,21 +363,25 @@ export default function CharacterCreationWizard({ onComplete }) {
   };
 
   return (
-    <div className="min-h-screen animated-bg flex items-center justify-center p-4">
-      <div className="glass-card max-w-3xl w-full p-8">
+    <div className="page-wrapper">
+      <div className="card card-gold" style={{ maxWidth: '900px', width: '100%' }}>
         {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between mb-2">
+        <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+          <div className="flex gap-sm" style={{ marginBottom: 'var(--spacing-sm)' }}>
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
-                className={`flex-1 h-2 rounded-full mx-1 transition-all ${
-                  s <= step ? 'bg-gradient-to-r from-purple-500 to-blue-500' : 'bg-gray-700'
-                }`}
+                style={{
+                  flex: 1,
+                  height: '4px',
+                  borderRadius: '999px',
+                  background: s <= step ? 'linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%)' : 'var(--bg-tertiary)',
+                  transition: 'all var(--transition-base)'
+                }}
               />
             ))}
           </div>
-          <p className="text-center text-sm text-secondary">
+          <p className="text-center" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
             Etapa {step} de 4
           </p>
         </div>

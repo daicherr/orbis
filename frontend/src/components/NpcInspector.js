@@ -30,58 +30,60 @@ const NpcInspector = ({ npc, onClose, onObserve }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 z-50 animate-fade-in"
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.92)', backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--spacing-lg)', zIndex: 50 }}
       onClick={onClose}
     >
       <div 
-        className="mystic-glass-gold p-8 max-w-2xl w-full animate-scale-in shadow-2xl rounded-2xl border-2 border-amber-500/50"
+        className="card card-gold fade-in"
+        style={{ maxWidth: '700px', width: '100%' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between mb-6 border-b-2 border-amber-500/30 pb-4">
+        <div className="flex justify-between items-start" style={{ marginBottom: 'var(--spacing-lg)', paddingBottom: 'var(--spacing-md)', borderBottom: '1px solid var(--border-accent)' }}>
           <div>
-            <h2 className="font-title text-3xl text-celestial-gold text-mystic-glow">{npc.name}</h2>
-            <p className="font-display text-sm text-white/70 mt-1">Cultivador Tier {npc.cultivation_tier || 1}</p>
+            <h2 className="glow-gold">{npc.name}</h2>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Cultivador Tier {npc.cultivation_tier || 1}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-3xl hover:text-red-400 transition-colors font-bold"
+            className="btn-icon btn-ghost"
+            style={{ fontSize: '2rem', lineHeight: 1 }}
           >
             ×
           </button>
         </div>
 
-        <div className="space-y-3 mb-6">
-          <div className="flex justify-between p-4 bg-black/50 rounded-xl border border-purple-500/30">
-            <span className="font-body text-white/70">Estado Emocional</span>
-            <span className={`font-display font-semibold capitalize ${
-              npc.emotional_state === 'hostile' ? 'text-red-300' :
-              npc.emotional_state === 'friendly' ? 'text-green-300' :
-              'text-blue-300'
-            }`}>
+        <div className="flex flex-col gap-sm" style={{ marginBottom: 'var(--spacing-lg)' }}>
+          <div className="stat-item panel">
+            <span className="stat-label">Estado Emocional</span>
+            <span className={`stat-value ${
+              npc.emotional_state === 'hostile' ? 'demon' :
+              npc.emotional_state === 'friendly' ? 'jade' :
+              ''
+            }`} style={{ textTransform: 'capitalize' }}>
               {npc.emotional_state || 'neutral'}
             </span>
           </div>
-          <div className="flex justify-between p-4 bg-black/50 rounded-xl border border-red-500/30">
-            <span className="font-body text-white/70">Vitalidade</span>
-            <span className="font-mono font-semibold text-red-300">
+          <div className="stat-item panel">
+            <span className="stat-label">Vitalidade</span>
+            <span className="stat-value demon">
               {Math.round(npc.current_hp)}/{Math.round(npc.max_hp)} HP
             </span>
           </div>
         </div>
 
-        <div className="p-6 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 rounded-xl border border-purple-500/40 backdrop-blur-sm">
+        <div className="panel card-jade">
           {isObserving ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="spinner border-celestial-gold"></div>
+            <div className="flex items-center justify-center" style={{ padding: 'var(--spacing-xl)' }}>
+              <div style={{ width: '32px', height: '32px', border: '4px solid rgba(212, 175, 55, 0.3)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
             </div>
           ) : (
-            <p className="font-body text-base leading-relaxed text-white/90">{description}</p>
+            <p style={{ lineHeight: '1.7', color: 'var(--text-secondary)' }}>{description}</p>
           )}
         </div>
 
         <button
           onClick={onClose}
-          className="btn-celestial w-full mt-6 px-6 py-3 font-display text-base"
+          className="btn btn-primary btn-block mt-lg"
         >
           Fechar Inspeção
         </button>

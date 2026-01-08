@@ -29,5 +29,159 @@
       "base_damage": 10
     },
     "value": 50
+  },
+  {
+    "id": "presas_de_cobre_bruto",
+    "name": "Presas de Cobre Bruto",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Presas de Cobre Bruto.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_fera_primordial_(rank_1)",
+    "name": "Essência de Fera Primordial (Rank 1)",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Fera Primordial (Rank 1).",
+    "value": 100
+  },
+  {
+    "id": "pele_de_lobo_das_sombras",
+    "name": "Pele de Lobo das Sombras",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Pele de Lobo das Sombras.",
+    "value": 100
+  },
+  {
+    "id": "garra_afiada_de_besta",
+    "name": "Garra Afiada de Besta",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Garra Afiada de Besta.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_qi_primordial",
+    "name": "Essência de Qi Primordial",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Qi Primordial.",
+    "value": 100
+  },
+  {
+    "id": "presa_de_lobo_reforçada",
+    "name": "Presa de Lobo Reforçada",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Presa de Lobo Reforçada.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_besta_primitiva",
+    "name": "Essência de Besta Primitiva",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Besta Primitiva.",
+    "value": 100
+  },
+  {
+    "id": "couro_rígido_de_ferro",
+    "name": "Couro Rígido de Ferro",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Couro Rígido de Ferro.",
+    "value": 100
+  },
+  {
+    "id": "couro_de_lince_sombrio",
+    "name": "Couro de Lince Sombrio",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Couro de Lince Sombrio.",
+    "value": 100
+  },
+  {
+    "id": "garras_de_vento_cortante",
+    "name": "Garras de Vento Cortante",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Garras de Vento Cortante.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_qi_incipiente",
+    "name": "Essência de Qi Incipiente",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Qi Incipiente.",
+    "value": 100
+  },
+  {
+    "id": "couro_de_fera_reforçado",
+    "name": "Couro de Fera Reforçado",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Couro de Fera Reforçado.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_carne_nutritiva",
+    "name": "Essência de Carne Nutritiva",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Carne Nutritiva.",
+    "value": 100
+  },
+  {
+    "id": "fragmento_de_chifre_negro",
+    "name": "Fragmento de Chifre Negro",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Fragmento de Chifre Negro.",
+    "value": 100
+  },
+  {
+    "id": "couro_endurecido_por_qi",
+    "name": "Couro Endurecido por Qi",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Couro Endurecido por Qi.",
+    "value": 100
+  },
+  {
+    "id": "núcleo_de_fera_(imperfeito)",
+    "name": "Núcleo de Fera (Imperfeito)",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Núcleo de Fera (Imperfeito).",
+    "value": 100
+  },
+  {
+    "id": "presas_de_ferro_bruto",
+    "name": "Presas de Ferro Bruto",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Presas de Ferro Bruto.",
+    "value": 100
+  },
+  {
+    "id": "couro_terrestre_endurecido",
+    "name": "Couro Terrestre Endurecido",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Couro Terrestre Endurecido.",
+    "value": 100
+  },
+  {
+    "id": "fragmento_de_núcleo_de_qi_terrestre",
+    "name": "Fragmento de Núcleo de Qi Terrestre",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Fragmento de Núcleo de Qi Terrestre.",
+    "value": 100
+  },
+  {
+    "id": "fragmento_de_couro_rochoso",
+    "name": "Fragmento de Couro Rochoso",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Fragmento de Couro Rochoso.",
+    "value": 100
+  },
+  {
+    "id": "presa_de_terra_lascada",
+    "name": "Presa de Terra Lascada",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Presa de Terra Lascada.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_terra_pobre",
+    "name": "Essência de Terra Pobre",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Terra Pobre.",
+    "value": 100
   }
 ]

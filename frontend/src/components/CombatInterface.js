@@ -6,39 +6,33 @@ const CombatInterface = ({ skills, onSkillClick, isLoading = false }) => {
   }
 
   return (
-    <div className="glass-panel p-5 rounded-2xl border border-imperial/20 relative overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-gold opacity-50"></div>
-      <h3 className="font-title text-base text-gold-glow mb-4 uppercase tracking-wider flex items-center gap-2">
-        <span className="text-2xl">⚔️</span>
+    <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%)', opacity: 0.5 }}></div>
+      
+      <h3 className="panel-header" style={{ marginBottom: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+        <span style={{ fontSize: '1.5rem' }}>⚔️</span>
         <span>Técnicas de Cultivo</span>
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
+      
+      <div className="grid grid-cols-2 gap-md">
         {skills.map((skill) => (
           <button
             key={skill.id}
             onClick={() => onSkillClick(skill.id)}
             disabled={isLoading}
-            className="
-              group relative p-4 
-              bg-gradient-void hover:bg-gradient-to-r hover:from-purple-900 hover:to-indigo-900
-              border border-mist-border hover:border-imperial 
-              rounded-xl transition-all duration-300 
-              hover:scale-105 hover:shadow-glow-purple
-              disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100
-              text-left
-            "
+            className="card card-hover"
+            style={{ padding: 'var(--spacing-md)', textAlign: 'left', cursor: 'pointer', position: 'relative', transition: 'all var(--transition-base)' }}
             title={skill.desc}
           >
-            <div className="text-3xl mb-2 filter drop-shadow-lg group-hover:scale-110 transition-transform">
+            <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>
               {skill.icon}
             </div>
-            <div className="font-display text-sm font-bold leading-tight text-slate-200 group-hover:text-gold-glow transition-colors">
+            <div style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: '4px' }}>
               {skill.name}
             </div>
-            <div className="font-body text-xs text-slate-400 mt-1 line-clamp-1">
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {skill.desc}
             </div>
-            <div className="absolute inset-0 bg-imperial/0 group-hover:bg-imperial/10 rounded-xl transition-all pointer-events-none"></div>
           </button>
         ))}
       </div>

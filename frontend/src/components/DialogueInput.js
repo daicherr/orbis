@@ -9,7 +9,7 @@ const DialogueInput = ({ onSend, isLoading = false }) => {
       try {
         setError(null);
         await onSend(inputValue);
-        setInputValue(''); // Só limpa se não houver erro
+        setInputValue('');
       } catch (err) {
         setError(err.message || 'Erro ao enviar ação');
         console.error('Erro no DialogueInput:', err);
@@ -24,38 +24,80 @@ const DialogueInput = ({ onSend, isLoading = false }) => {
     }
   };
 
+  const quickActions = [
+    { text: 'Olhar ao redor', icon: '👁️' },
+    { text: 'Falar com', icon: '💬' },
+    { text: 'Atacar', icon: '⚔️' },
+    { text: 'Meditar', icon: '🧘' },
+  ];
+
   return (
-    <div className="border-t-2 border-imperial/30 p-5 bg-black/50 backdrop-blur-sm">
+    <div style={{ 
+      borderTop: '2px solid var(--gold)', 
+      padding: 'var(--spacing-lg)', 
+      background: 'var(--bg-secondary)' 
+    }}>
       {error && (
-        <div className="glass-demon p-3 rounded-lg mb-3 border border-demon text-sm font-body text-slate-200">
+        <div className="card-demon" style={{ padding: 'var(--spacing-sm)', marginBottom: 'var(--spacing-md)', fontSize: '0.875rem' }}>
           ⚠️ {error}
         </div>
       )}
-      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-3">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Descreva sua ação... (ex: 'explorar a floresta', 'meditar', 'atacar')"
-          className="
-            flex-1 px-6 py-4 
-            glass-panel border border-mist-border 
-            focus:border-imperial focus:outline-none focus:ring-2 focus:ring-imperial/50 
-            rounded-xl transition-all font-body text-slate-200 text-lg
-            placeholder-slate-500
-          "
-          disabled={isLoading}
-        />
+      
+      {/* Quick Action Pills */}
+      <div className="flex gap-sm" style={{ marginBottom: 'var(--spacing-md)', flexWrap: 'wrap' }}>
+        {quickActions.map((action, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setInputValue(action.text + ' ')}
+            disabled={isLoading}
+            className="btn-pill"
+          >
+            <span>{action.icon}</span>
+            <span>{action.text}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Main Input Area */}
+      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-md">
+        <div style={{ flex: 1, position: 'relative' }}>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="O que você deseja fazer? (Descreva sua ação em linguagem natural...)"
+            disabled={isLoading}
+            className="input"
+            style={{ fontSize: '1rem', width: '100%' }}
+          />
+        </div>
+        
         <button
           type="submit"
-          onClick={handleSend}
           disabled={isLoading || !inputValue.trim()}
-          className="btn-gold px-8 py-4 font-display text-lg disabled:opacity-40 disabled:cursor-not-allowed"
+          className="btn btn-primary"
+          style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}
         >
-          {isLoading ? '⏳ Processando' : '⚔️ Agir'}
+          {isLoading ? (
+            <>
+              <div className="loading-spinner-small"></div>
+              <span>Aguarde...</span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: '1.25rem' }}>⚔️</span>
+              <span>Agir</span>
+            </>
+          )}
         </button>
       </form>
+      
+      {/* Helper Text */}
+      <div style={{ marginTop: 'var(--spacing-sm)', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+        💡 Dica: Seja descritivo! <span style={{ color: 'var(--text-secondary)' }}>"Examino cuidadosamente o pergaminho antigo"</span> é melhor que <span style={{ color: 'var(--text-secondary)' }}>"olhar"</span>
+      </div>
     </div>
   );
 };

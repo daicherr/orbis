@@ -1,4 +1,4 @@
-import '../styles/globals.css'
+import '../styles/main.css'
 import { GameProvider } from '../contexts/GameContext'
 
 export default function App({ Component, pageProps }) {
