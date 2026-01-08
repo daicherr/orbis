@@ -17,6 +17,8 @@ from app.database.repositories.npc_repo import NpcRepository
 from app.database.repositories.hybrid_search import HybridSearchRepository
 from app.database.repositories.gamelog_repo import GameLogRepository
 from app.database.repositories.world_event_repo import WorldEventRepository
+from app.database.repositories.faction_repo import FactionRepository
+from app.database.repositories.economy_repo import GlobalEconomyRepository
 from app.services.gemini_client import GeminiClient
 from app.services.embedding_service import EmbeddingService, embedding_service
 from app.services.lore_cache import lore_cache
@@ -609,6 +611,7 @@ async def get_world_time():
     season = world_clock.get_season()
     
     return {
+        "datetime": dt.isoformat(),  # Adicionado para compatibilidade com testes
         "day": dt.day,
         "month": dt.month,
         "year": dt.year,
@@ -618,6 +621,73 @@ async def get_world_time():
         "season": season,
         "timestamp": dt.isoformat()
     }
+
+
+@app.get("/world/factions")
+async def get_world_factions(session: AsyncSession = Depends(get_session)):
+    """Retorna todas as facções do mundo."""
+    try:
+        from app.database.repositories.faction_repo import FactionRepository
+        faction_repo = FactionRepository(session)
+        factions = await faction_repo.get_all()
+        return [
+            {
+                "name": f.name,
+                "territory": f.territory,
+                "power": f.power,
+                "wealth": f.wealth,
+                "influence": f.influence,
+                "relations": f.relations
+            }
+            for f in factions
+        ]
+    except Exception as e:
+        print(f"[ERROR] /world/factions: {e}")
+        # Retorna lista vazia se não há facções ou erro
+        return []
+
+
+@app.get("/world/economy")
+async def get_world_economy(session: AsyncSession = Depends(get_session)):
+    """Retorna estado da economia global."""
+    try:
+        from app.database.repositories.economy_repo import GlobalEconomyRepository
+        repo = GlobalEconomyRepository(session)
+        economy = await repo.get_latest()
+        if not economy:
+            return {"prices": {}, "trends": {}, "supply": {}, "demand": {}}
+        return {
+            "prices": economy.prices,
+            "trends": economy.trends,
+            "supply": economy.supply,
+            "demand": economy.demand
+        }
+    except Exception as e:
+        print(f"[ERROR] /world/economy: {e}")
+        return {"prices": {}, "trends": {}, "supply": {}, "demand": {}}
+
+
+@app.get("/locations/all")
+async def get_all_locations():
+    """Retorna todas as locations dinâmicas registradas."""
+    try:
+        from app.core.location_manager import location_manager
+        locations = location_manager.get_all_locations()
+        return [
+            {
+                "id": loc.id,
+                "name": loc.name,
+                "description": loc.description,
+                "location_type": loc.location_type,
+                "danger_level": loc.danger_level,
+                "resources": loc.resources
+            }
+            for loc in locations
+        ]
+    except Exception as e:
+        print(f"[ERROR] /locations/all: {e}")
+        return []
+
 
 # --- Character Creation Endpoints (Session Zero) ---
 
@@ -1048,6 +1118,41 @@ async def get_active_quests(player_id: int):
         "quests": active_quests,
         "count": len(active_quests)
     }
+
+@app.get("/game/log/{player_id}")
+async def get_game_log(player_id: int, limit: int = 10):
+    """Retorna o histórico de turnos do jogador."""
+    try:
+        async with AsyncSession(engine) as session:
+            from sqlmodel import select
+            from app.database.models import GameLog
+            
+            statement = select(GameLog).where(
+                GameLog.player_id == player_id
+            ).order_by(GameLog.turn_number.desc()).limit(limit)
+            
+            results = await session.execute(statement)
+            logs = results.scalars().all()
+            
+            return {
+                "logs": [
+                    {
+                        "turn_number": log.turn_number,
+                        "player_input": log.player_input,
+                        "scene_description": log.scene_description,
+                        "action_result": log.action_result,
+                        "location": log.location,
+                        "npcs_present": log.npcs_present,
+                        "world_time": log.world_time,
+                        "created_at": log.created_at.isoformat() if log.created_at else None
+                    }
+                    for log in logs
+                ],
+                "count": len(logs)
+            }
+    except Exception as e:
+        print(f"[GAME LOG] Erro ao buscar histórico: {e}")
+        return {"logs": [], "count": 0}
 
 @app.post("/quest/complete")
 async def complete_quest(
