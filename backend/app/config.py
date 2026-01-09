@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     GEMINI_MODEL_COMBAT: str = "models/gemini-3-pro-preview"
     GEMINI_MODEL_FAST: str = "models/gemini-2.5-flash-preview-09-2025"
 
+    @property
+    def async_database_url(self) -> str:
+        """URL para LangGraph PostgresSaver (usa psycopg, não asyncpg)."""
+        # Converte postgresql+asyncpg:// para postgresql://
+        return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

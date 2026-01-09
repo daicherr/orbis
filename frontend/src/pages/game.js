@@ -11,7 +11,7 @@ import NpcInspector from '../components/NpcInspector';
 import LoadingOverlay from '../components/LoadingOverlay';
 
 export default function GamePage() {
-	const { playerId, playerName, sendAction, isLoading: contextLoading, refreshFromStorage } = useGame();
+	const { playerId, playerName, sendAction, sendActionSSE, isLoading: contextLoading, refreshFromStorage } = useGame();
 	const [messages, setMessages] = useState([]);
 	const [playerStats, setPlayerStats] = useState(null);
 	const [npcsInScene, setNpcsInScene] = useState([]);
@@ -25,13 +25,16 @@ export default function GamePage() {
 	const messagesEndRef = useRef(null);
 
 	// Helper para detectar tipo de loading baseado na ação
+	// Retorna null para ações normais (sem overlay)
+	// Retorna 'sleep' para ações que passam tempo significativo
 	const detectLoadingType = (action) => {
 		const lowerAction = action.toLowerCase();
-		const sleepKeywords = ['dormir', 'descansar', 'repousar', 'sleep', 'rest', 'recuperar energia'];
+		const sleepKeywords = ['dormir', 'descansar', 'repousar', 'sleep', 'rest', 'recuperar energia', 'meditar por horas', 'cultivar por'];
 		if (sleepKeywords.some(kw => lowerAction.includes(kw))) {
 			return 'sleep';
 		}
-		return 'action';
+		// Ações normais não mostram overlay
+		return null;
 	};
 
 	// Estado para skills reais do player
@@ -116,10 +119,13 @@ export default function GamePage() {
 		}
 		setSelectedNpc(null);
 		
-		// Detectar tipo de loading
+		// Detectar tipo de loading - só mostra overlay para casos especiais
 		const detectedType = explicitType || detectLoadingType(inputText);
-		setLoadingType(detectedType);
-		setIsLoading(true);
+		setLoadingType(detectedType || 'action');
+		// Só ativa loading para tipos especiais (init, sleep, dawn)
+		if (detectedType) {
+			setIsLoading(true);
+		}
 
 		try {
 			const data = await sendAction(inputText);
@@ -139,6 +145,10 @@ export default function GamePage() {
 		}
 	};
 
+	// Estado para mensagem sendo digitada progressivamente
+	const [streamingText, setStreamingText] = useState('');
+	const [isStreaming, setIsStreaming] = useState(false);
+
 	const handleSend = async (inputText) => {
 		if (!playerId) {
 			setMessages(prev => [...prev, { type: 'error', text: '⚠️ Player não identificado. Recarregue a página.' }]);
@@ -150,31 +160,63 @@ export default function GamePage() {
 		}
 		setSelectedNpc(null);
 		
-		// Detectar tipo de loading
+		// Detectar tipo de loading (null = sem overlay)
 		const detectedType = detectLoadingType(inputText);
-		setLoadingType(detectedType);
-		setIsLoading(true);
-
-		try {
-			const data = await sendAction(inputText);
-			
-			// Detectar se houve dawn tick
-			if (data.action_result && data.action_result.includes('O sol nasce sobre Orbis')) {
-				setLoadingType('dawn');
-			}
-			
-			setMessages(prev => [...prev, { type: 'narrator', text: data.scene_description }]);
-			if (data.action_result) {
-				setMessages(prev => [...prev, { type: 'action', text: data.action_result }]);
-			}
-			setPlayerStats(data.player_state);
-			setNpcsInScene(data.npcs_in_scene || []);
-		} catch (error) {
-			console.error('Failed to send action:', error);
-			setMessages(prev => [...prev, { type: 'error', text: `❌ Erro: ${error.message}` }]);
-		} finally {
-			setIsLoading(false);
+		setLoadingType(detectedType || 'action');
+		// Só mostra overlay para sleep/dawn, não para ações normais
+		if (detectedType) {
+			setIsLoading(true);
 		}
+
+		// Iniciar streaming
+		setStreamingText('');
+		setIsStreaming(true);
+		let accumulatedText = '';
+
+		sendActionSSE(inputText, {
+			onChunk: (chunk) => {
+				accumulatedText += chunk;
+				setStreamingText(accumulatedText);
+			},
+			onExecutor: (data) => {
+				// Mostrar resultado da ação se houver
+				if (data.summary) {
+					setMessages(prev => [...prev, { type: 'action', text: data.summary }]);
+				}
+			},
+			onDone: (data) => {
+				setIsStreaming(false);
+				// Adicionar narrativa completa às mensagens
+				if (accumulatedText) {
+					setMessages(prev => [...prev, { type: 'narrator', text: accumulatedText }]);
+				}
+				setStreamingText('');
+				
+				// Atualizar estado do player se disponível
+				if (data.player_state) {
+					setPlayerStats(data.player_state);
+				}
+				if (data.npcs_in_scene) {
+					setNpcsInScene(data.npcs_in_scene);
+				}
+				
+				// Detectar dawn tick
+				if (data.world_tick_occurred) {
+					setLoadingType('dawn');
+					setIsLoading(true);
+					setTimeout(() => setIsLoading(false), 2000);
+				} else {
+					setIsLoading(false);
+				}
+			},
+			onError: (error) => {
+				setIsStreaming(false);
+				setStreamingText('');
+				setIsLoading(false);
+				console.error('SSE Error:', error);
+				setMessages(prev => [...prev, { type: 'error', text: `❌ Erro: ${error}` }]);
+			}
+		});
 	};
 
 	const handleAttack = (skillId) => {
@@ -379,6 +421,21 @@ export default function GamePage() {
 								);
 							})}
 							
+							{/* Streaming text (typing effect) */}
+							{isStreaming && streamingText && (
+								<div className="chat-narrator">
+									<div className="chat-narrator-label">
+										<span>📜 Cronista do Crepúsculo</span>
+										<span className="typing-indicator">▌</span>
+									</div>
+									<div className="chat-narrator-text">
+										{streamingText.split('\n\n').map((paragraph, pIdx) => (
+											<p key={pIdx}>{paragraph}</p>
+										))}
+									</div>
+								</div>
+							)}
+							
 							{/* Loading indicator */}
 							{isLoading && (
 								<div className="chat-system" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--spacing-md)' }}>
@@ -390,7 +447,7 @@ export default function GamePage() {
 						</div>
 
 						{/* === INPUT AREA === */}
-						<DialogueInput onSend={handleSend} isLoading={isLoading} />
+						<DialogueInput onSend={handleSend} isLoading={isLoading || isStreaming} />
 					</div>
 
 					{/* === RIGHT SIDEBAR (Combat & Actions) === */}

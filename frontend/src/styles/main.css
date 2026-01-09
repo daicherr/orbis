@@ -906,6 +906,19 @@ textarea.input {
   text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
 }
 
+/* Typing indicator for streaming */
+.typing-indicator {
+  animation: blink 0.7s infinite;
+  color: var(--gold);
+  font-weight: bold;
+  margin-left: var(--spacing-sm);
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
 /* Player Message */
 .chat-player {
   background: linear-gradient(135deg, rgba(79, 70, 229, 0.25) 0%, rgba(99, 102, 241, 0.2) 100%);

@@ -30,6 +30,8 @@ from app.agents.stylizer import Stylizer
 from app.agents.scribe import Scribe
 from app.agents.architect import Architect
 from app.agents.villains.profiler import Profiler
+from app.agents.graph_core import SimpleGameGraph, GameGraph
+from app.agents.nodes.state import player_from_db, world_from_context, create_initial_state
 from app.core.world_sim import WorldSimulator
 from sqlalchemy import text
 from app.core.simulation.daily_tick import DailyTickSimulator
@@ -83,7 +85,12 @@ async def lifespan(app: FastAPI):
         # Precisaremos passar os repositórios mais tarde nas chamadas
         print("[DEBUG] Inicializando WorldSimulator...")
         app_state["world_simulator"] = WorldSimulator(gemini_client=gemini_client)
-        print("Serviços de IA inicializados (incluindo WorldSimulator).")
+        
+        # Inicializar GameGraph (LangGraph v2) como singleton
+        print("[DEBUG] Inicializando GameGraph...")
+        app_state["game_graph"] = GameGraph(gemini_client=gemini_client)
+        
+        print("Serviços de IA inicializados (incluindo WorldSimulator e GameGraph).")
     except Exception as e:
         print(f"ERRO CRÍTICO: Falha ao inicializar serviços. Detalhes: {type(e).__name__}: {e}")
         import traceback
@@ -364,6 +371,379 @@ async def game_turn(player_id: int, player_input: str, director: Director = Depe
         raise HTTPException(status_code=404, detail=result.get("error"))
         
     return result
+
+
+# ============================================================
+# V2 - LangGraph Endpoints
+# ============================================================
+
+@app.post("/v2/game/turn")
+async def game_turn_v2(
+    player_id: int,
+    player_input: str,
+    session_id: str = "default",
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    V2: Processa um turno usando a arquitetura LangGraph.
+    
+    Flow: Planner → Executor → Validator (loop) → Narrator
+    
+    Args:
+        player_id: ID do jogador
+        player_input: Ação do jogador em linguagem natural
+        session_id: ID da sessão para persistência de estado
+    
+    Returns:
+        Dict com narrativa, estado do jogador e metadados
+    """
+    # Obter repositórios
+    player_repo = PlayerRepository(session)
+    npc_repo = NpcRepository(session)
+    gamelog_repo = GameLogRepository(session)
+    
+    # Carregar jogador
+    player = await player_repo.get_by_id(player_id)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    await session.refresh(player)
+    
+    # Construir contextos
+    player_context = player_from_db(player)
+    
+    # Buscar NPCs na localização
+    current_location = player.current_location or "Floresta Assombrada"
+    npcs_in_scene = await npc_repo.get_by_location(current_location)
+    
+    # Obter turno atual
+    recent_logs = await gamelog_repo.get_recent_turns(player_id, limit=1)
+    turn_number = (recent_logs[0].turn_number + 1) if recent_logs else 1
+    
+    # Construir world context - passando NPCs do banco diretamente
+    world_context = world_from_context(
+        location=current_location,
+        npcs=npcs_in_scene,  # Objetos NPC do banco
+        time_of_day=world_clock.get_time_of_day(),
+        weather="clear"
+    )
+    
+    # Obter gemini client
+    gemini_client = app_state.get("gemini_client")
+    if not gemini_client:
+        raise HTTPException(status_code=503, detail="Gemini client not initialized")
+    
+    # Criar grafo e executar turno
+    try:
+        graph = SimpleGameGraph(gemini_client=gemini_client)
+        
+        result = await graph.run_turn(
+            session_id=session_id,
+            player_id=player_id,
+            user_input=player_input,
+            player_context=player_context,
+            world_context=world_context,
+            turn_number=turn_number
+        )
+        
+        # Salvar no game log
+        game_log = GameLog(
+            player_id=player_id,
+            turn_number=turn_number,
+            player_input=player_input,
+            scene_description=result.get("narration", ""),
+            action_taken=result.get("action_summary", "unknown"),
+            action_successful=result.get("success", False),
+            location=current_location,
+            npcs_present=[npc.name for npc in npcs_in_scene],
+            world_time=world_clock.get_current_time_str()
+        )
+        session.add(game_log)
+        await session.commit()
+        
+        return {
+            "success": True,
+            "turn_number": turn_number,
+            "narrative": result.get("narration", ""),
+            "action": result.get("action_result", {}),
+            "action_summary": result.get("action_summary", ""),
+            "player_state": {
+                "hp": player.current_hp,
+                "yuan_qi": player.yuan_qi,
+                "gold": player.gold,
+                "location": current_location
+            },
+            "validation_attempts": result.get("validation_attempts", 0),
+            "graph_version": "v2-langgraph"
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Graph execution error: {str(e)}")
+
+
+@app.post("/v2/game/turn/persistent")
+async def game_turn_v2_persistent(
+    player_id: int,
+    player_input: str,
+    session_id: str = "default",
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    V2 Persistente: Turno com checkpoints PostgreSQL.
+    
+    Habilita time-travel: undo/redo de turnos.
+    Usa GameGraph com AsyncPostgresSaver.
+    """
+    player_repo = PlayerRepository(session)
+    npc_repo = NpcRepository(session)
+    gamelog_repo = GameLogRepository(session)
+    
+    player = await player_repo.get_by_id(player_id)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    
+    await session.refresh(player)
+    
+    player_context = player_from_db(player)
+    current_location = player.current_location or "Floresta Assombrada"
+    npcs_in_scene = await npc_repo.get_by_location(current_location)
+    
+    recent_logs = await gamelog_repo.get_recent_turns(player_id, limit=1)
+    turn_number = (recent_logs[0].turn_number + 1) if recent_logs else 1
+    
+    world_context = world_from_context(
+        location=current_location,
+        npcs=npcs_in_scene,
+        time_of_day=world_clock.get_time_of_day(),
+        weather="clear"
+    )
+    
+    game_graph = app_state.get("game_graph")
+    if not game_graph:
+        raise HTTPException(status_code=503, detail="GameGraph not initialized")
+    
+    try:
+        result = await game_graph.run_turn(
+            session_id=session_id,
+            player_id=player_id,
+            user_input=player_input,
+            player_context=player_context,
+            world_context=world_context,
+            turn_number=turn_number
+        )
+        
+        # Salvar no game log
+        game_log = GameLog(
+            player_id=player_id,
+            turn_number=turn_number,
+            player_input=player_input,
+            scene_description=result.get("narration", ""),
+            action_taken=result.get("action_summary", "unknown"),
+            action_successful=result.get("success", False),
+            location=current_location,
+            npcs_present=[npc.name for npc in npcs_in_scene],
+            world_time=world_clock.get_current_time_str()
+        )
+        session.add(game_log)
+        await session.commit()
+        
+        return {
+            "success": True,
+            "turn_number": turn_number,
+            "narrative": result.get("narration", ""),
+            "action": result.get("action_result", {}),
+            "action_summary": result.get("action_summary", ""),
+            "player_state": {
+                "hp": player.current_hp,
+                "yuan_qi": player.yuan_qi,
+                "gold": player.gold,
+                "location": current_location
+            },
+            "validation_attempts": result.get("validation_attempts", 0),
+            "graph_version": "v2-langgraph-persistent",
+            "session_id": session_id
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Graph execution error: {str(e)}")
+
+
+@app.post("/v2/game/turn/stream")
+async def game_turn_stream_v2(
+    player_id: int,
+    player_input: str,
+    session_id: str = "default"
+):
+    """
+    V2 Streaming: Turno com Server-Sent Events.
+    
+    Retorna eventos SSE conforme o grafo executa:
+    - event: planner - Ação planejada
+    - event: executor - Resultado da execução
+    - event: validator - Status da validação
+    - event: narrator_chunk - Chunks da narrativa (efeito de digitação)
+    - event: done - Turno completo
+    - event: error - Se houver erro
+    
+    Exemplo de consumo JavaScript:
+    ```javascript
+    const evtSource = new EventSource('/v2/game/turn/stream?player_id=1&player_input=...');
+    evtSource.addEventListener('narrator_chunk', (e) => {
+        const data = JSON.parse(e.data);
+        appendToNarrative(data.text);
+    });
+    ```
+    """
+    import json
+    
+    # Usar sessão interna para evitar problemas com lifecycle do request
+    async with AsyncSession(engine) as session:
+        player_repo = PlayerRepository(session)
+        npc_repo = NpcRepository(session)
+        gamelog_repo = GameLogRepository(session)
+        
+        player = await player_repo.get_by_id(player_id)
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found")
+        
+        await session.refresh(player)
+        
+        player_context = player_from_db(player)
+        current_location = player.current_location or "Floresta Assombrada"
+        npcs_in_scene = await npc_repo.get_by_location(current_location)
+        
+        recent_logs = await gamelog_repo.get_recent_turns(player_id, limit=1)
+        turn_number = (recent_logs[0].turn_number + 1) if recent_logs else 1
+        
+        world_context = world_from_context(
+            location=current_location,
+            npcs=npcs_in_scene,
+            time_of_day=world_clock.get_time_of_day(),
+            weather="clear"
+        )
+        
+        # Capturar NPC names para log (antes de fechar session)
+        npc_names = [npc.name for npc in npcs_in_scene]
+    
+    game_graph = app_state.get("game_graph")
+    if not game_graph:
+        raise HTTPException(status_code=503, detail="GameGraph not initialized")
+    
+    async def event_generator():
+        """Gera eventos SSE."""
+        full_narration = ""
+        
+        async for event in game_graph.stream_turn(
+            session_id=session_id,
+            player_id=player_id,
+            user_input=player_input,
+            player_context=player_context,
+            world_context=world_context,
+            turn_number=turn_number
+        ):
+            event_type = event.get("event", "message")
+            event_data = event.get("data", "{}")
+            
+            # Acumular narrativa para salvar no log
+            if event_type == "narrator_chunk":
+                data = json.loads(event_data)
+                full_narration += data.get("text", "")
+            
+            # Formato SSE: event: <type>\ndata: <json>\n\n
+            yield f"event: {event_type}\ndata: {event_data}\n\n"
+        
+        # Salvar no game log após streaming completo (nova sessão)
+        try:
+            async with AsyncSession(engine) as log_session:
+                game_log = GameLog(
+                    player_id=player_id,
+                    turn_number=turn_number,
+                    player_input=player_input,
+                    scene_description=full_narration,
+                    action_taken="stream",
+                    action_successful=True,
+                    location=current_location,
+                    npcs_present=npc_names,
+                    world_time=world_clock.get_current_time_str()
+                )
+                log_session.add(game_log)
+                await log_session.commit()
+        except Exception as e:
+            print(f"[SSE] Erro ao salvar log: {e}")
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@app.post("/v2/game/undo")
+async def game_undo_v2(
+    session_id: str = "default"
+):
+    """
+    V2: Desfaz o último turno (time travel).
+    
+    Restaura o checkpoint anterior da sessão.
+    """
+    game_graph = app_state.get("game_graph")
+    if not game_graph:
+        raise HTTPException(status_code=503, detail="GameGraph not initialized")
+    
+    try:
+        result = await game_graph.undo_turn(session_id)
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error", "Undo failed"))
+        
+        return {
+            "success": True,
+            "message": "Turno desfeito com sucesso",
+            "checkpoint_id": result.get("checkpoint_id"),
+            "restored_state": result.get("state", {})
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Undo error: {str(e)}")
+
+
+@app.get("/v2/game/checkpoints/{session_id}")
+async def get_checkpoints_v2(session_id: str):
+    """
+    V2: Lista todos os checkpoints de uma sessão.
+    
+    Útil para implementar histórico de turnos.
+    """
+    game_graph = app_state.get("game_graph")
+    if not game_graph:
+        raise HTTPException(status_code=503, detail="GameGraph not initialized")
+    
+    try:
+        checkpoints = await game_graph.get_checkpoints(session_id)
+        
+        return {
+            "session_id": session_id,
+            "checkpoints": checkpoints,
+            "count": len(checkpoints)
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching checkpoints: {str(e)}")
 
 
 @app.post("/game/turn/stream")
