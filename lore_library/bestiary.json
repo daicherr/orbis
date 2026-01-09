@@ -78,5 +78,15 @@
       "defense": 25,
       "rank": 1
     }
+  },
+  {
+    "id": "javali_de_presas_de_ferro",
+    "name": "Javali de Presas de Ferro",
+    "description": "Um javali selvagem de proporções massivas cujas presas emitem um brilho metálico frio. Sua pele é infundida com Qi da terra, tornando-a tão resistente quanto o carvalho seco.",
+    "stats": {
+      "hp": 150,
+      "defense": 25,
+      "rank": 1
+    }
   }
 ]

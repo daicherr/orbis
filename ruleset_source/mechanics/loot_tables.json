@@ -396,26 +396,26 @@
     }
   },
   "monsters": {
-    "javali_de_casca_rochosa": {
-      "name": "Javali de Casca Rochosa",
+    "javali_de_presas_de_ferro": {
+      "name": "Javali de Presas de Ferro",
       "drops": [
         {
-          "item_id": "fragmento_de_couro_rochoso",
-          "chance": 0.7,
-          "quantity_min": 1,
-          "quantity_max": 3
-        },
-        {
-          "item_id": "presa_de_terra_lascada",
-          "chance": 0.3,
+          "item_id": "presa_de_ferro_refinado",
+          "chance": 0.4,
           "quantity_min": 1,
           "quantity_max": 2
         },
         {
-          "item_id": "essência_de_terra_pobre",
-          "chance": 0.1,
+          "item_id": "couro_rígido_de_javali",
+          "chance": 0.7,
           "quantity_min": 1,
           "quantity_max": 1
+        },
+        {
+          "item_id": "essência_de_carne_de_besta",
+          "chance": 0.9,
+          "quantity_min": 1,
+          "quantity_max": 3
         }
       ]
     }

@@ -12,6 +12,7 @@ from app.core.combat_engine import CombatEngine
 from app.core.constitution_effects import ConstitutionEffects
 from app.database.models.player import Player
 from app.database.models.memory import Memory
+from app.database.models.logs import GameLog
 from app.database.repositories.player_repo import PlayerRepository
 from app.database.repositories.npc_repo import NpcRepository
 from app.database.repositories.hybrid_search import HybridSearchRepository
@@ -343,7 +344,10 @@ async def get_player_history(
             "id": log.id,
             "turn_number": log.turn_number,
             "player_input": log.player_input[:100] + "..." if len(log.player_input) > 100 else log.player_input,
+            "scene_description": log.scene_description,
+            "action_result": log.action_result,
             "location": log.location,
+            "npcs_present": log.npcs_present,
             "world_time": log.world_time,
             "created_at": str(log.created_at) if log.created_at else None,
         }
@@ -853,19 +857,42 @@ Descrição: {important_npc_desc}
         except:
             important_npc_name = None
     
-    # Criar player no banco de dados
+    # [SPRINT 16] Analisar backstory para determinar estado inicial correto
+    should_have_skills = False
+    initial_location = request.origin_location
+    
+    # Análise inteligente do contexto
+    if first_scene_context:
+        context_lower = first_scene_context.lower()
+        # Se menciona treinamento, mestre, cultivação anterior, etc.
+        if any(word in context_lower for word in ['treinou', 'mestre', 'cultivou', 'técnica', 'discípulo']):
+            should_have_skills = True
+        # Se menciona ser criança, iniciante, nunca cultivou, etc.
+        if any(word in context_lower for word in ['criança', 'nunca cultivou', 'iniciante', 'comprado', 'escravo', 'servente']):
+            should_have_skills = False
+            
+        # Detectar localização específica mencionada
+        if 'mansão' in context_lower or 'residência' in context_lower or 'casa' in context_lower:
+            # Será ajustada depois ao criar a home_location
+            pass
+    
+    # Criar player no banco de dados SEM SKILLS se não fizer sentido
     player_repo = PlayerRepository(session)
     player = await player_repo.create(
         name=request.name,
         appearance=request.appearance,
         constitution_type=request.constitution,
-        origin_location=request.origin_location,
+        origin_location=initial_location,
         backstory=backstory.strip(),
         constitution=request.constitution,
         # Novos campos
         first_scene_context=first_scene_context,
         important_npc_name=important_npc_name
     )
+    
+    # [SPRINT 16] REMOVER auto-skills se não fizer sentido narrativamente
+    if not should_have_skills:
+        player.learned_skills = []  # Começar SEM SKILLS
     
     # [SPRINT 5] Aplicar efeitos de constituição nos stats base
     ConstitutionEffects.apply_constitution_effects(player)
@@ -880,6 +907,9 @@ Descrição: {important_npc_desc}
                 player=player,
                 home_description=home_description
             )
+            # [SPRINT 16] Ajustar current_location para home se contexto indicar
+            if first_scene_context and any(word in first_scene_context.lower() for word in ['casa', 'lar', 'quarto', 'residência']):
+                player.current_location = player.home_location
             # home_location e home_location_id já são setados pelo método
             await session.refresh(player)
         except Exception as e:
@@ -893,7 +923,89 @@ Descrição: {important_npc_desc}
         await session.commit()
         await session.refresh(player)
     
-    return player
+    # [SPRINT 16] Criar o NPC importante na mesma localização do player
+    if important_npc_name and important_npc_desc:
+        try:
+            # Criar NPC na localização atual do player
+            from app.database.models.npc import NPC
+            npc_data = {
+                "name": important_npc_name,
+                "rank": 1,  # Mesmo rank inicial
+                "personality_traits": ["amigável", "importante"],
+                "emotional_state": "neutral",
+                "current_location": player.current_location,
+            }
+            
+            # Inserir diretamente no banco
+            important_npc = NPC(**npc_data)
+            session.add(important_npc)
+            await session.commit()
+            print(f"[CHARACTER CREATION] NPC importante '{important_npc_name}' criado em {player.current_location}")
+        except Exception as e:
+            print(f"[CHARACTER CREATION] Erro ao criar NPC importante: {e}")
+    
+    await session.commit()
+    await session.refresh(player)
+    
+    # [SPRINT 18] GERAR PRIMEIRA CENA AUTOMÁTICA (Turn 0)
+    first_scene_narration = ""
+    if first_scene_context:
+        try:
+            # Buscar NPCs na localização inicial
+            npc_repository = NpcRepository(session)
+            npcs_at_location = await npc_repository.get_by_location(player.current_location)
+            npc_names = [npc.name for npc in npcs_at_location]
+            
+            # Obter Narrator do app_state
+            narrator = app_state.get("narrator")
+            if not narrator:
+                raise Exception("Narrator não inicializado")
+            
+            # Gerar narração usando o método correto do Narrator
+            first_scene_narration = await narrator.generate_scene_description_async(
+                player=player,
+                location=player.current_location,
+                npcs_in_scene=npcs_at_location,
+                player_last_action="",
+                previous_narration="",
+                memory_repo=None,
+                is_first_scene=True
+            )
+            
+            # Registrar Turn 0 no GameLog
+            npc_names = [npc.name for npc in npcs_at_location]
+            from app.core.chronos import world_clock
+            current_time = world_clock.get_current_datetime().isoformat()
+            
+            turn_0 = GameLog(
+                player_id=player.id,
+                turn_number=0,
+                player_input="[CRIAÇÃO DE PERSONAGEM]",
+                scene_description=first_scene_narration if first_scene_narration else f"Você desperta em {player.current_location}.",
+                action_result=f"Personagem criado. Skills: {should_have_skills}. NPC Importante: {important_npc_name if important_npc_name else 'Nenhum'}",
+                location=player.current_location,
+                npcs_present=npc_names,
+                world_time=current_time
+            )
+            session.add(turn_0)
+            await session.commit()
+            print(f"[SPRINT 18] Turn 0 gerado para {player.name}")
+            
+        except Exception as e:
+            print(f"[SPRINT 18] Erro ao gerar primeira cena: {e}")
+            first_scene_narration = f"Você desperta em {player.current_location}. Sua jornada começa agora..."
+    
+    # [SPRINT 16] Retornar feedback de skills (ou falta delas)
+    return {
+        **player.model_dump(),
+        "creation_feedback": {
+            "has_initial_skills": should_have_skills,
+            "skills_explanation": "Você ainda não possui técnicas de cultivo. Precisará treinar ou ter uma epifania para aprendê-las." if not should_have_skills else f"Você possui as seguintes técnicas: {', '.join(player.learned_skills)}",
+            "important_npc_created": important_npc_name if important_npc_name else None,
+            "starting_location": player.current_location,
+            "first_scene": first_scene_narration
+        }
+    }
 
 # =====================================================
 # [SPRINT 5] SHOP & ECONOMY ENDPOINTS

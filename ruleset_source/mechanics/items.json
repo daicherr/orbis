@@ -183,5 +183,26 @@
     "type": "material",
     "description": "Um material raro dropado por uma criatura: Essência de Terra Pobre.",
     "value": 100
+  },
+  {
+    "id": "presa_de_ferro_refinado",
+    "name": "Presa de Ferro Refinado",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Presa de Ferro Refinado.",
+    "value": 100
+  },
+  {
+    "id": "couro_rígido_de_javali",
+    "name": "Couro Rígido de Javali",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Couro Rígido de Javali.",
+    "value": 100
+  },
+  {
+    "id": "essência_de_carne_de_besta",
+    "name": "Essência de Carne de Besta",
+    "type": "material",
+    "description": "Um material raro dropado por uma criatura: Essência de Carne de Besta.",
+    "value": 100
   }
 ]

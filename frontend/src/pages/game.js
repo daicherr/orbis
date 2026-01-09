@@ -34,14 +34,40 @@ export default function GamePage() {
 		return 'action';
 	};
 
-	const playerSkills = [
-		{ id: 'meteor_soul', name: 'Meteor Soul', element: 'shadow', icon: '⚔️', desc: 'Ignora armadura' },
-		{ id: 'shadowstep', name: 'Shadowstep', element: 'shadow', icon: '👤', desc: 'Teleporte + Counter' },
-		{ id: 'qi_burst', name: 'Qi Burst', element: 'qi', icon: '💫', desc: 'AOE de Yuan Qi' },
-		{ id: 'silent_strike', name: 'Silent Strike', element: 'shadow', icon: '🗡️', desc: 'Ataque furtivo' },
-		{ id: 'wall_of_northern_heavens', name: 'Wall of Northern', element: 'defense', icon: '🛡️', desc: 'Reflete 50% dano' },
-		{ id: 'blood_essence_strike', name: 'Blood Essence', element: 'blood', icon: '🩸', desc: 'Usa HP como dano' },
-	];
+	// Estado para skills reais do player
+	const [playerSkills, setPlayerSkills] = useState([]);
+	const [skillsData, setSkillsData] = useState({});
+
+	// Carregar skills.json do backend/public
+	useEffect(() => {
+		const loadSkills = async () => {
+			try {
+				const response = await fetch('/items.json');
+				if (response.ok) {
+					const data = await response.json();
+					// items.json pode ter skills também, ou buscar de /api
+				}
+			} catch (error) {
+				console.error('Erro ao carregar skills:', error);
+			}
+			
+			// Tentar buscar do backend
+			try {
+				const skillsRes = await fetch('http://localhost:8000/skills');
+				if (skillsRes.ok) {
+					const allSkills = await skillsRes.json();
+					const skillsMap = {};
+					allSkills.forEach(s => {
+						skillsMap[s.skill_id] = s;
+					});
+					setSkillsData(skillsMap);
+				}
+			} catch (error) {
+				console.warn('Skills API não disponível:', error);
+			}
+		};
+		loadSkills();
+	}, []);
 
 	// Atualizar playerId do localStorage ao montar
 	useEffect(() => {
@@ -175,6 +201,25 @@ export default function GamePage() {
 			9: "Criação"
 		};
 		return tiers[tier] || `Tier ${tier}`;
+	};
+
+	// Helper para mapear elemento para ícone
+	const getSkillIcon = (element) => {
+		const icons = {
+			shadow: '🗡️',
+			qi: '✨',
+			blood: '🩸',
+			fire: '🔥',
+			water: '💧',
+			defense: '🛡️',
+			silent_strike: '🤫',
+			meteor_soul: '⚔️',
+			shadowstep: '👤',
+			qi_burst: '💫',
+			wall_of_northern_heavens: '🛡️',
+			blood_essence_strike: '🩸'
+		};
+		return icons[element] || '⚡';
 	};
 
 	return (
@@ -356,6 +401,11 @@ export default function GamePage() {
 							skills={playerSkills} 
 							onSkillClick={handleAttack}
 							isLoading={isLoading}
+							playerResources={{
+								shadow_chi: playerStats?.shadow_chi || 0,
+								yuan_qi: playerStats?.yuan_qi || 0,
+								quintessence: playerStats?.quintessence || 0
+							}}
 						/>
 
 						{/* Quick Actions */}
